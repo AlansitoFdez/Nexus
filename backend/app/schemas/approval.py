@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class ApprovalCreate(BaseModel):
     ticket_id: int
@@ -14,5 +14,4 @@ class ApprovalResponse(BaseModel):
     decided_at: datetime | None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
