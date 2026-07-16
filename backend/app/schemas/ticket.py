@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 class TicketCreate(BaseModel):
-  original_text: str
+    original_text: str
 
 
 class TicketResponse(BaseModel):
@@ -18,4 +18,4 @@ class TicketResponse(BaseModel):
     updated_at: datetime | None
 
     class Config:
-      from_attributes: True
+        from_attributes = True
