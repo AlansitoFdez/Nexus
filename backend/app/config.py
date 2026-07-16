@@ -1,6 +1,21 @@
+"""Application configuration loaded from environment variables.
+
+Uses pydantic-settings to validate required environment variables at
+startup (fail-fast), instead of failing later when a missing variable
+is first accessed.
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
+    """Environment-based application settings.
+
+    All fields except ENVIRONMENT are required; the application will
+    raise a ValidationError and refuse to start if any of them is
+    missing from the .env file or the real environment.
+    """
+
     DATABASE_URL: str
     REDIS_URL: str
     GROQ_API_KEY: str
@@ -9,5 +24,6 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     model_config = SettingsConfigDict(env_file=".env")
+
 
 settings = Settings()
