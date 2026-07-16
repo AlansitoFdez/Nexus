@@ -9,5 +9,5 @@ class KnowledgeBaseEntry(Base):
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
     category = Column(String(50), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
