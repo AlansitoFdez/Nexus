@@ -15,7 +15,7 @@ class Ticket(Base):
     diagnosis = Column(Text, nullable=True)
     proposed_response = Column(Text, nullable=True)
     escalated = Column(Boolean, server_default=sa.text("false"), nullable=False)
-    node_history = Column(JSONB, server_default=sa.text("'[]'"), nullable=False)
+    node_history = Column(JSONB, server_default=sa.text("'[]'::jsonb"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

@@ -8,7 +8,7 @@ class Approval(Base):
     __tablename__ = "approvals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
+    ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False, index=True)
     proposed_action = Column(Text, nullable=False)
     status = Column(String(20), server_default=sa.text("'pending'"), nullable=False)
     decided_at = Column(DateTime(timezone=True), nullable=True)
