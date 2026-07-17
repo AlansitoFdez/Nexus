@@ -1,6 +1,6 @@
 """REST endpoints for ticket creation and retrieval."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -10,7 +10,7 @@ from app.schemas.ticket import TicketCreate, TicketResponse
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 
-@router.post("/", response_model=TicketResponse)
+@router.post("/", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 def create_ticket(data: TicketCreate, db: Session = Depends(get_db)):
     """Creates a new ticket from the user's original text."""
     repo = TicketRepository(db)
