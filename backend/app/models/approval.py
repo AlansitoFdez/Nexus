@@ -1,10 +1,26 @@
+"""SQLAlchemy model for human approval requests.
+
+An Approval represents an action proposed by the agent pipeline that
+requires human sign-off before execution (human-in-the-loop). It is
+always linked to the Ticket that generated it.
+"""
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
-import sqlalchemy as sa
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+import sqlalchemy as sa
 from app.database import Base
 
+
 class Approval(Base):
+    """A pending, approved or rejected action awaiting human review.
+
+    Attributes:
+        status: One of "pending", "approved" or "rejected". Always
+            starts as "pending" when created.
+        ticket: The Ticket this approval was generated for.
+    """
+
     __tablename__ = "approvals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
