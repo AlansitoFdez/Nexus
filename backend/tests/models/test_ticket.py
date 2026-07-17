@@ -1,4 +1,3 @@
-# backend/tests/models/test_ticket.py
 """Tests for the Ticket model and its relationship with Approval."""
 
 from app.models.ticket import Ticket
