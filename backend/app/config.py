@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     MCP_SERVER_URL: str
     MCP_API_KEY: str
     ENVIRONMENT: str = "development"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     model_config = SettingsConfigDict(env_file=".env")
 
