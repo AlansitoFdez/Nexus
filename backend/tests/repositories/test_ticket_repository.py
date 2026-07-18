@@ -1,6 +1,6 @@
 """Tests for TicketRepository database operations."""
 
-from app.repositories.ticket_repository import TicketRepository
+from app.repositories.ticket_repository import TicketRepository, TicketUpdate
 from app.schemas.ticket import TicketCreate
 
 
@@ -43,3 +43,24 @@ def test_get_all_returns_every_ticket(db_session):
     tickets = repo.get_all()
 
     assert len(tickets) == 2
+
+
+def test_update_only_modifies_provided_fields(db_session):
+    """update() should not overwrite fields that weren't included in the payload."""
+    repo = TicketRepository(db_session)
+    ticket = repo.create(TicketCreate(original_text="no carga el dashboard"))
+
+    repo.update(ticket.id, TicketUpdate(diagnosis="problema de caché del navegador"))
+    updated = repo.update(ticket.id, TicketUpdate(classification="bug"))
+
+    assert updated.classification == "bug"
+    assert updated.diagnosis == "problema de caché del navegador"
+
+
+def test_update_returns_none_when_ticket_does_not_exist(db_session):
+    """update() should return None when no ticket matches the given ID."""
+    repo = TicketRepository(db_session)
+
+    result = repo.update(999, TicketUpdate(classification="bug"))
+
+    assert result is None

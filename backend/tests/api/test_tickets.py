@@ -53,3 +53,23 @@ def test_get_ticket_returns_404_when_not_found():
     response = client.get("/tickets/999")
 
     assert response.status_code == 404
+
+
+def test_patch_ticket_updates_only_provided_fields():
+    """PATCH /tickets/{id} should update only the fields sent in the payload."""
+    create_response = client.post("/tickets/", json={"original_text": "no puedo subir archivos"})
+    ticket_id = create_response.json()["id"]
+
+    client.patch(f"/tickets/{ticket_id}", json={"diagnosis": "límite de tamaño excedido"})
+    response = client.patch(f"/tickets/{ticket_id}", json={"classification": "bug"})
+
+    data = response.json()
+    assert data["classification"] == "bug"
+    assert data["diagnosis"] == "límite de tamaño excedido"
+
+
+def test_patch_ticket_returns_404_when_not_found():
+    """PATCH /tickets/{id} should return 404 when the ticket doesn't exist."""
+    response = client.patch("/tickets/999", json={"classification": "bug"})
+
+    assert response.status_code == 404
