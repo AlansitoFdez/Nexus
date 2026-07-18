@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.models.ticket import Ticket
 from app.schemas.ticket import TicketCreate
+from app.schemas.ticket import TicketUpdate
 
 
 class TicketRepository:
@@ -32,3 +33,21 @@ class TicketRepository:
     def get_all(self) -> list[Ticket]:
         """Retrieves all tickets."""
         return self.db.query(Ticket).all()
+
+    def update(self, ticket_id: int, data: TicketUpdate) -> Ticket | None:
+        """Applies a partial update to an existing ticket.
+
+        Only fields explicitly provided in `data` are modified; omitted
+        fields are left untouched.
+        """
+        ticket = self.get_by_id(ticket_id)
+        if ticket is None:
+            return None
+
+        update_fields = data.model_dump(exclude_unset=True)
+        for field, value in update_fields.items():
+            setattr(ticket, field, value)
+
+        self.db.commit()
+        self.db.refresh(ticket)
+        return ticket

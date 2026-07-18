@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.repositories.ticket_repository import TicketRepository
-from app.schemas.ticket import TicketCreate, TicketResponse
+from app.schemas.ticket import TicketCreate, TicketResponse, TicketUpdate
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -34,3 +34,14 @@ def list_tickets(db: Session = Depends(get_db)):
     """Retrieves all tickets."""
     repo = TicketRepository(db)
     return repo.get_all()
+
+@router.patch("/{ticket_id}", response_model=TicketResponse)
+def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db)):
+    """Partially updates an existing ticket."""
+    repo = TicketRepository(db)
+    ticket = repo.update(ticket_id, data)
+
+    if ticket is None:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    return ticket

@@ -33,3 +33,18 @@ class TicketResponse(BaseModel):
     updated_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TicketUpdate(BaseModel):
+    """Payload for partially updating an existing ticket.
+
+    Every field is optional: each caller (e.g. a graph node) only
+    sends the fields it just computed, leaving the rest untouched.
+    """
+
+    cleaned_text: str | None = None
+    classification: str | None = None
+    diagnosis: str | None = None
+    proposed_response: str | None = None
+    escalated: bool | None = None
+    node_history: list | None = None
