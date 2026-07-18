@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import tickets
+from app.api import tickets, knowledge_base, approvals
 from app.config import settings
 
 app = FastAPI(title="Nexus")
@@ -14,6 +14,8 @@ app.add_middleware(
 )
 
 app.include_router(tickets.router)
+app.include_router(knowledge_base.router)
+app.include_router(approvals.router)
 
 
 @app.get("/health")
