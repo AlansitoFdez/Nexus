@@ -14,9 +14,9 @@ class TicketNotFoundError(Exception):
 class ApprovalRepository:
     """Handles persistence operations for Approval entities."""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, ticket_repository: TicketRepository):
         self.db = db
-        self.ticket_repository = TicketRepository(db)
+        self.ticket_repository = ticket_repository
 
     def create(self, data: ApprovalCreate) -> Approval:
         """Creates and persists a new approval request, defaulting to pending.

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.repositories.approval_repository import ApprovalRepository, TicketNotFoundError
+from app.repositories.ticket_repository import TicketRepository
 from app.schemas.approval import ApprovalCreate, ApprovalResponse
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
@@ -17,7 +18,8 @@ router = APIRouter(prefix="/approvals", tags=["approvals"])
 @router.post("/", response_model=ApprovalResponse, status_code=201)
 def create_approval(data: ApprovalCreate, db: Session = Depends(get_db)):
     """Creates a new approval request for a ticket."""
-    repo = ApprovalRepository(db)
+    ticket_repository = TicketRepository(db)
+    repo = ApprovalRepository(db, ticket_repository)
     try:
         return repo.create(data)
     except TicketNotFoundError:
@@ -27,7 +29,7 @@ def create_approval(data: ApprovalCreate, db: Session = Depends(get_db)):
 @router.get("/{approval_id}", response_model=ApprovalResponse)
 def get_approval(approval_id: int, db: Session = Depends(get_db)):
     """Retrieves a single approval by its ID, or 404 if it doesn't exist."""
-    repo = ApprovalRepository(db)
+    repo = ApprovalRepository(db, TicketRepository(db))
     approval = repo.get_by_id(approval_id)
 
     if approval is None:
@@ -39,5 +41,5 @@ def get_approval(approval_id: int, db: Session = Depends(get_db)):
 @router.get("/", response_model=list[ApprovalResponse])
 def list_approvals(db: Session = Depends(get_db)):
     """Retrieves all approvals."""
-    repo = ApprovalRepository(db)
+    repo = ApprovalRepository(db, TicketRepository(db))
     return repo.get_all()
