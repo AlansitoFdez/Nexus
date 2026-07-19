@@ -1,6 +1,6 @@
 """REST endpoints for knowledge base entry creation and retrieval."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -10,7 +10,7 @@ from app.schemas.knowledge_base import KnowledgeBaseEntryCreate, KnowledgeBaseEn
 router = APIRouter(prefix="/knowledge-base", tags=["knowledge-base"])
 
 
-@router.post("/", response_model=KnowledgeBaseEntryResponse, status_code=201)
+@router.post("/", response_model=KnowledgeBaseEntryResponse, status_code=status.HTTP_201_CREATED)
 def create_entry(data: KnowledgeBaseEntryCreate, db: Session = Depends(get_db)):
     """Creates a new knowledge base entry."""
     repo = KnowledgeBaseRepository(db)
@@ -24,7 +24,7 @@ def get_entry(entry_id: int, db: Session = Depends(get_db)):
     entry = repo.get_by_id(entry_id)
 
     if entry is None:
-        raise HTTPException(status_code=404, detail="Knowledge base entry not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Knowledge base entry not found") 
 
     return entry
 

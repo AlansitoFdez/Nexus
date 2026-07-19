@@ -4,7 +4,7 @@ Approving or rejecting a pending approval is not implemented here;
 that logic belongs to the human-in-the-loop graph node (phase 2.7).
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -23,7 +23,7 @@ def create_approval(data: ApprovalCreate, db: Session = Depends(get_db)):
     try:
         return repo.create(data)
     except TicketNotFoundError:
-        raise HTTPException(status_code=404, detail=f"Ticket {data.ticket_id} not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Ticket {data.ticket_id} not found")
 
 
 @router.get("/{approval_id}", response_model=ApprovalResponse)
@@ -33,7 +33,7 @@ def get_approval(approval_id: int, db: Session = Depends(get_db)):
     approval = repo.get_by_id(approval_id)
 
     if approval is None:
-        raise HTTPException(status_code=404, detail="Approval not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
 
     return approval
 

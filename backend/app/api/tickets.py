@@ -24,7 +24,7 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db)):
     ticket = repo.get_by_id(ticket_id)
 
     if ticket is None:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
     return ticket
 
@@ -42,6 +42,6 @@ def update_ticket(ticket_id: int, data: TicketUpdate, db: Session = Depends(get_
     ticket = repo.update(ticket_id, data)
 
     if ticket is None:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
     return ticket
