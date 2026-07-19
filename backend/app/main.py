@@ -1,5 +1,13 @@
+"""FastAPI application entry point.
+
+Assembles all routers and middleware (CORS) into a single app instance,
+served via `uvicorn app.main:app`.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app import models  
 from app.api import tickets, knowledge_base, approvals
 from app.config import settings
 
