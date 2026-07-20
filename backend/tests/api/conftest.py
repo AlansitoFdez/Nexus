@@ -38,3 +38,11 @@ def setup_and_teardown_db():
 def client():
     """Provides a TestClient bound to the FastAPI app."""
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def reset_websocket_manager():
+    from app.api.websocket import manager
+    manager.active_connections.clear()
+    yield
+    manager.active_connections.clear()
