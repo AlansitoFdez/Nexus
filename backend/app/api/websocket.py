@@ -52,7 +52,7 @@ manager = ConnectionManager()
 async def ticket_websocket(websocket: WebSocket, ticket_id: int):
     """Subscribes a client to real-time updates for a specific ticket."""
     await manager.connect(ticket_id, websocket)
-    await manager.send_to_ticket(ticket_id, f"Conectado al ticket {ticket_id}")
+    await websocket.send_text(f"Conectado al ticket {ticket_id}")
 
     try:
         while True:
