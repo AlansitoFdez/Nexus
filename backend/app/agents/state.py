@@ -21,6 +21,8 @@ class TicketState(TypedDict):
     original_text: str
     cleaned_text: str | None
     classification: str | None
+    urgency: str | None
+    confidence: float | None
     kb_documents: list[dict]
     similar_tickets: list[dict]
     diagnosis: str | None
