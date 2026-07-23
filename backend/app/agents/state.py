@@ -31,3 +31,4 @@ class TicketState(TypedDict):
     escalated: bool
     node_history: Annotated[list[str], operator.add]
     error: str | None
+    diagnosis_confidence: float | None
