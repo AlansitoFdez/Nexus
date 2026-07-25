@@ -30,7 +30,7 @@ class DiagnosisOutput(BaseModel):
     probable_cause: str = Field(description="The most likely root cause of the issue.")
     proposed_solution: str = Field(description="A concrete solution or next step to resolve it.")
     confidence: float = Field(ge=0, le=1, description="Confidence in this diagnosis, from 0 to 1.")
-    actions_required: list[str] = Field(
-        default_factory=list,
-        description="High-impact actions needing human approval before execution, if any.",
+    actions_required: list[str] | None = Field(
+        default=None,
+        description="High-impact actions requiring human approval before execution. Use an empty list or omit this field entirely if none are needed.",
     )
