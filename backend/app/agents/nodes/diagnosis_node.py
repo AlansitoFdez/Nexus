@@ -53,7 +53,7 @@ Similar previously resolved tickets:
     return {
         "diagnosis": f"{result.probable_cause} {result.proposed_solution}",
         "diagnosis_confidence": result.confidence,
-        "pending_actions": result.actions_required,
+        "pending_actions": result.actions_required or [],
         "similar_tickets": similar_tickets,
         "node_history": ["diagnosis"],
     }
