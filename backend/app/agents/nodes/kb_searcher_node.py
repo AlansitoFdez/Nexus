@@ -22,8 +22,8 @@ async def kb_searcher_node(state: TicketState) -> dict:
     in the state. On failure to reach the MCP server or call the tool,
     returns an error delta instead of raising.
     """
-    async with Client(settings.MCP_SERVER_URL) as client:
-        try:
+    try:
+        async with Client(settings.MCP_SERVER_URL) as client:
             result = await client.call_tool(
                 "search_knowledge_base", {"query": state["cleaned_text"]}
             )
@@ -32,13 +32,13 @@ async def kb_searcher_node(state: TicketState) -> dict:
                 doc for doc in result.data if doc["relevance_score"] >= MIN_RELEVANCE_SCORE
             ]
 
-        except Exception as e:
-            return {
-                "error": f"KB Searcher node failed: {e}",
-                "node_history": ["kb_searcher"],
-            }
-
+    except Exception as e:
         return {
-            "kb_documents": relevant_docs,
+            "error": f"KB Searcher node failed: {e}",
             "node_history": ["kb_searcher"],
         }
+
+    return {
+        "kb_documents": relevant_docs,
+        "node_history": ["kb_searcher"],
+    }
