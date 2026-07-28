@@ -20,13 +20,10 @@ def _make_mock_client(call_tool_return):
 
 
 @pytest.mark.asyncio
-async def test_kb_searcher_node_filters_by_relevance():
-    """Documents below MIN_RELEVANCE_SCORE should be excluded."""
+async def test_kb_searcher_node_stores_documents_returned_by_the_tool():
+    """The node no longer filters by relevance — that now happens in the DB query."""
     fake_docs = SimpleNamespace(
-        data=[
-            {"id": 1, "title": "Reset password", "relevance_score": 0.92},
-            {"id": 2, "title": "Unrelated doc", "relevance_score": 0.3},
-        ]
+        data=[{"id": 1, "title": "Reset password", "relevance_score": 0.06}]
     )
 
     with patch(
@@ -36,8 +33,7 @@ async def test_kb_searcher_node_filters_by_relevance():
         state = {"cleaned_text": "no puedo iniciar sesión"}
         result = await kb_searcher_node(state)
 
-    assert len(result["kb_documents"]) == 1
-    assert result["kb_documents"][0]["id"] == 1
+    assert result["kb_documents"] == fake_docs.data
     assert result["node_history"] == ["kb_searcher"]
 
 

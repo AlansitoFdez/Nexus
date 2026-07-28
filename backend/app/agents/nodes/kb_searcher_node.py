@@ -12,14 +12,13 @@ from app.agents.state import TicketState
 from app.config import settings
 from fastmcp import Client
 
-MIN_RELEVANCE_SCORE = 0.7
-
 
 async def kb_searcher_node(state: TicketState) -> dict:
     """Searches the knowledge base for documents relevant to the ticket.
 
-    Filters out results below MIN_RELEVANCE_SCORE before storing them
-    in the state. On failure to reach the MCP server or call the tool,
+    Relevance filtering happens in the DB layer (search_vector @@ tsquery),
+    not here — the tool only ever returns real linguistic matches, already
+    ranked by ts_rank. On failure to reach the MCP server or call the tool,
     returns an error delta instead of raising.
     """
     try:
@@ -27,10 +26,7 @@ async def kb_searcher_node(state: TicketState) -> dict:
             result = await client.call_tool(
                 "search_knowledge_base", {"query": state["cleaned_text"]}
             )
-
-            relevant_docs = [
-                doc for doc in result.data if doc["relevance_score"] >= MIN_RELEVANCE_SCORE
-            ]
+            documents = result.data
 
     except Exception as e:
         return {
@@ -39,6 +35,6 @@ async def kb_searcher_node(state: TicketState) -> dict:
         }
 
     return {
-        "kb_documents": relevant_docs,
+        "kb_documents": documents,
         "node_history": ["kb_searcher"],
     }
