@@ -1,12 +1,5 @@
-"""SQLAlchemy model for knowledge base entries.
-
-Unlike Ticket, a KnowledgeBaseEntry is always created complete (title
-and content are required at creation time), since it represents a
-static reference document rather than something progressively filled
-in by the agent pipeline.
-"""
-
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Computed
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -22,3 +15,11 @@ class KnowledgeBaseEntry(Base):
     category = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    search_vector = Column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('spanish', coalesce(title, '') || ' ' || coalesce(content, ''))",
+            persisted=True,
+        ),
+    )

@@ -1,16 +1,30 @@
 """Tests for placeholder MCP tools, using FastMCP's in-memory client."""
 
+from unittest.mock import patch
+
 import pytest
 from fastmcp import Client
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.mcp_server.instance import mcp
-from app.mcp_server import tools  
+from app.mcp_server import tools
+from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from app.schemas.knowledge_base import KnowledgeBaseEntryCreate
 
+TEST_DATABASE_URL = "postgresql://user:password@localhost:5434/nexus_test"
+engine = create_engine(TEST_DATABASE_URL)
+TestSessionLocal = sessionmaker(bind=engine)
 
 @pytest.mark.asyncio
-async def test_search_knowledge_base_returns_relevant_entries():
-    async with Client(mcp) as client:
-        result = await client.call_tool("search_knowledge_base", {"query": "contraseña"})
+async def test_search_knowledge_base_returns_relevant_entries(db_session):
+    repo = KnowledgeBaseRepository(db_session)
+    repo.create(KnowledgeBaseEntryCreate(title="Cómo resetear tu contraseña", content="Pasos para restablecer el acceso"))
+    repo.create(KnowledgeBaseEntryCreate(title="Cómo cambiar tu foto de perfil", content="Sube una imagen desde ajustes"))
+
+    with patch.object(tools, "SessionLocal", TestSessionLocal):
+        async with Client(mcp) as client:
+            result = await client.call_tool("search_knowledge_base", {"query": "contraseña"})
 
     assert result.data[0]["title"] == "Cómo resetear tu contraseña"
 

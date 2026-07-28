@@ -7,32 +7,31 @@ negocio real (eso llega en la Fase 3).
 """
 
 from app.mcp_server.instance import mcp
+from app.database import SessionLocal
+from app.mcp_server.instance import mcp
+from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 
 
 @mcp.tool
-def search_knowledge_base(query: str) -> list[dict]:
+def search_knowledge_base(query: str, limit: int = 5) -> list[dict]:
     """Searches the knowledge base for entries relevant to a support query.
 
     Use this when the ticket describes a problem that might already have
     a documented solution (how-to questions, known configuration issues).
-    Do not use this for looking up a specific ticket's history — use
-    query_tickets_db for that instead.
 
     Args:
         query: The text to search for, typically the ticket's content.
+        limit: Maximum number of results to return.
 
     Returns:
-        A list of matching entries, each with an id, title, content and
-        a relevance_score between 0 and 1.
+        A list of matching entries ranked by relevance_score.
     """
-    return [
-        {
-            "id": 1,
-            "title": "Cómo resetear tu contraseña",
-            "content": "Pasos para restablecer el acceso a tu cuenta...",
-            "relevance_score": 0.92,
-        }
-    ]
+    db = SessionLocal()
+    try:
+        repo = KnowledgeBaseRepository(db)
+        return repo.search(query, limit=limit)
+    finally:
+        db.close()
 
 
 @mcp.tool
