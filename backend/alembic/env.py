@@ -14,6 +14,7 @@ from app.database import Base
 from app.models.ticket import Ticket
 from app.models.knowledge_base import KnowledgeBaseEntry
 from app.models.approval import Approval
+from app.models.external_ticket import ExternalTicket
 from app.config import settings
 
 # this is the Alembic Config object, which provides

@@ -46,13 +46,17 @@ async def test_query_tickets_db_returns_similar_resolved_tickets(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_external_ticket_returns_external_id():
-    async with Client(mcp) as client:
-        result = await client.call_tool(
-            "create_external_ticket", {"ticket_id": 1, "summary": "fallo de login"}
-        )
+async def test_create_external_ticket_returns_external_id(db_session):
+    ticket = TicketRepository(db_session).create(TicketCreate(original_text="fallo crítico"))
+
+    with patch.object(tools, "SessionLocal", TestSessionLocal):
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "create_external_ticket", {"ticket_id": ticket.id, "summary": "fallo de login"}
+            )
 
     assert result.data["status"] == "created"
+    assert result.data["external_ticket_id"].startswith("EXT-")
 
 
 @pytest.mark.asyncio

@@ -11,6 +11,7 @@ from app.database import SessionLocal
 from app.mcp_server.instance import mcp
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.repositories.ticket_repository import TicketRepository
+from app.repositories.external_ticket_repository import ExternalTicketRepository
 
 
 @mcp.tool
@@ -68,7 +69,9 @@ def create_external_ticket(ticket_id: int, summary: str) -> dict:
     """Creates a ticket in the external ticketing system used by the support team.
 
     Use this only when a ticket must be escalated to a human because the
-    system could not resolve it automatically.
+    system could not resolve it automatically. Idempotent: calling this
+    again for a ticket_id that already has an external ticket returns
+    the existing one instead of creating a duplicate.
 
     Args:
         ticket_id: The internal Nexus ticket ID being escalated.
@@ -77,7 +80,16 @@ def create_external_ticket(ticket_id: int, summary: str) -> dict:
     Returns:
         A dict with the external system's ticket ID and its status.
     """
-    return {"external_ticket_id": "EXT-1001", "status": "created"}
+    db = SessionLocal()
+    try:
+        repo = ExternalTicketRepository(db)
+        external_ticket = repo.create(ticket_id, summary)
+        return {
+            "external_ticket_id": f"EXT-{external_ticket.id:04d}",
+            "status": external_ticket.status,
+        }
+    finally:
+        db.close()
 
 
 @mcp.tool
