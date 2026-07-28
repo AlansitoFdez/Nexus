@@ -51,3 +51,23 @@ class TicketRepository:
         self.db.commit()
         self.db.refresh(ticket)
         return ticket
+
+    def get_similar_resolved(self, category: str, limit: int = 5) -> list[Ticket]:
+        """Retrieves resolved tickets in the given category, most recent first.
+
+        A ticket counts as "resolved" if it produced a response through the
+        normal pipeline (proposed_response is set) and was not escalated to
+        a human — an escalated ticket only carries a diagnosis handed off,
+        not a validated solution worth reusing as precedent.
+        """
+        return (
+            self.db.query(Ticket)
+            .filter(
+                Ticket.classification == category,
+                Ticket.proposed_response.isnot(None),
+                Ticket.escalated.is_(False),
+            )
+            .order_by(Ticket.created_at.desc())
+            .limit(limit)
+            .all()
+        )

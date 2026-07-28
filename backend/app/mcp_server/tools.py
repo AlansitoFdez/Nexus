@@ -10,6 +10,7 @@ from app.mcp_server.instance import mcp
 from app.database import SessionLocal
 from app.mcp_server.instance import mcp
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from app.repositories.ticket_repository import TicketRepository
 
 
 @mcp.tool
@@ -50,13 +51,16 @@ def query_tickets_db(category: str, limit: int = 5) -> list[dict]:
         A list of resolved tickets with their id, classification and
         the solution that was applied.
     """
-    return [
-        {
-            "id": 42,
-            "classification": category,
-            "solution": "Se reinició el servicio y se limpió la caché.",
-        }
-    ]
+    db = SessionLocal()
+    try:
+        repo = TicketRepository(db)
+        tickets = repo.get_similar_resolved(category, limit=limit)
+        return [
+            {"id": t.id, "classification": t.classification, "solution": t.proposed_response}
+            for t in tickets
+        ]
+    finally:
+        db.close()
 
 
 @mcp.tool

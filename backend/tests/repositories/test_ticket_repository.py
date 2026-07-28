@@ -64,3 +64,51 @@ def test_update_returns_none_when_ticket_does_not_exist(db_session):
     result = repo.update(999, TicketUpdate(classification="bug"))
 
     assert result is None
+
+
+def test_get_similar_resolved_returns_only_non_escalated_tickets_with_response(db_session):
+    """get_similar_resolved() should exclude escalated tickets and unresolved ones."""
+    repo = TicketRepository(db_session)
+
+    resolved = repo.create(TicketCreate(original_text="no puedo iniciar sesión"))
+    repo.update(resolved.id, TicketUpdate(classification="bug", proposed_response="Reinicia el servicio"))
+
+    escalated = repo.create(TicketCreate(original_text="fuga de datos crítica"))
+    repo.update(escalated.id, TicketUpdate(classification="bug", escalated=True))
+
+    unresolved = repo.create(TicketCreate(original_text="error intermitente"))
+    repo.update(unresolved.id, TicketUpdate(classification="bug"))
+
+    results = repo.get_similar_resolved("bug")
+
+    assert len(results) == 1
+    assert results[0].id == resolved.id
+
+
+def test_get_similar_resolved_filters_by_category(db_session):
+    """get_similar_resolved() should only return tickets matching the given category."""
+    repo = TicketRepository(db_session)
+
+    bug_ticket = repo.create(TicketCreate(original_text="fallo al guardar"))
+    repo.update(bug_ticket.id, TicketUpdate(classification="bug", proposed_response="Solución aplicada"))
+
+    config_ticket = repo.create(TicketCreate(original_text="no encuentro el ajuste"))
+    repo.update(config_ticket.id, TicketUpdate(classification="configuration", proposed_response="Ir a ajustes > cuenta"))
+
+    results = repo.get_similar_resolved("bug")
+
+    assert len(results) == 1
+    assert results[0].id == bug_ticket.id
+
+
+def test_get_similar_resolved_respects_limit(db_session):
+    """get_similar_resolved() should not return more than `limit` tickets."""
+    repo = TicketRepository(db_session)
+
+    for i in range(3):
+        t = repo.create(TicketCreate(original_text=f"ticket {i}"))
+        repo.update(t.id, TicketUpdate(classification="bug", proposed_response="Resuelto"))
+
+    results = repo.get_similar_resolved("bug", limit=2)
+
+    assert len(results) == 2
