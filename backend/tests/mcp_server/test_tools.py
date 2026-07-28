@@ -60,11 +60,13 @@ async def test_create_external_ticket_returns_external_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_notify_team_confirms_notification_sent():
-    async with Client(mcp) as client:
-        result = await client.call_tool("notify_team", {"message": "ticket urgente"})
+async def test_notify_team_confirms_notification_sent(db_session):
+    with patch.object(tools, "SessionLocal", TestSessionLocal):
+        async with Client(mcp) as client:
+            result = await client.call_tool("notify_team", {"message": "ticket urgente"})
 
     assert result.data["notified"] is True
+    assert result.data["channel"] == "log"
 
 
 @pytest.mark.asyncio

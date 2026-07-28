@@ -12,6 +12,10 @@ from app.mcp_server.instance import mcp
 from app.repositories.knowledge_base_repository import KnowledgeBaseRepository
 from app.repositories.ticket_repository import TicketRepository
 from app.repositories.external_ticket_repository import ExternalTicketRepository
+import logging
+from app.repositories.notification_repository import NotificationRepository
+
+logger = logging.getLogger("nexus.notifications")
 
 
 @mcp.tool
@@ -108,3 +112,29 @@ def notify_team(message: str, urgency: str = "normal") -> dict:
         which channel.
     """
     return {"notified": True, "channel": "log"}
+
+
+@mcp.tool
+def notify_team(message: str, urgency: str = "normal") -> dict:
+    """Sends a notification to the human support team.
+
+    Use this alongside create_external_ticket when escalating, or on its
+    own for lower-impact alerts that don't require a full ticket.
+
+    Args:
+        message: The notification content.
+        urgency: One of "low", "normal", "high". Defaults to "normal".
+
+    Returns:
+        A dict confirming whether the notification was sent and via
+        which channel.
+    """
+    logger.info("Notification [%s]: %s", urgency, message)
+
+    db = SessionLocal()
+    try:
+        repo = NotificationRepository(db)
+        repo.create(message=message, urgency=urgency, channel="log")
+        return {"notified": True, "channel": "log"}
+    finally:
+        db.close()
