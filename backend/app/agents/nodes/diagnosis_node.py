@@ -23,7 +23,7 @@ async def diagnosis_node(state: TicketState) -> dict:
     never diagnose with incomplete context.
     """
     try:
-        async with Client(settings.MCP_SERVER_URL) as client:
+        async with Client(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY) as client:
             tickets_result = await client.call_tool(
                 "query_tickets_db", {"category": state["classification"]}
             )

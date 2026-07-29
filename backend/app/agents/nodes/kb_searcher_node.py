@@ -22,7 +22,7 @@ async def kb_searcher_node(state: TicketState) -> dict:
     returns an error delta instead of raising.
     """
     try:
-        async with Client(settings.MCP_SERVER_URL) as client:
+        async with Client(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY) as client:
             result = await client.call_tool(
                 "search_knowledge_base", {"query": state["cleaned_text"]}
             )

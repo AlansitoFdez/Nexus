@@ -14,12 +14,14 @@ from app.repositories.ticket_repository import TicketRepository
 from app.repositories.external_ticket_repository import ExternalTicketRepository
 import logging
 from app.repositories.notification_repository import NotificationRepository
+from typing import Annotated, Literal
+from pydantic import Field
 
 logger = logging.getLogger("nexus.notifications")
 
 
 @mcp.tool
-def search_knowledge_base(query: str, limit: int = 5) -> list[dict]:
+def search_knowledge_base(query: str, limit: Annotated[int, Field(ge=1, le=20)] = 5,) -> list[dict]:
     """Searches the knowledge base for entries relevant to a support query.
 
     Use this when the ticket describes a problem that might already have
@@ -41,7 +43,7 @@ def search_knowledge_base(query: str, limit: int = 5) -> list[dict]:
 
 
 @mcp.tool
-def query_tickets_db(category: str, limit: int = 5) -> list[dict]:
+def query_tickets_db(category: Literal["bug", "usage_question", "configuration", "urgent"], limit: Annotated[int, Field(ge=1, le=20)] = 5,) -> list[dict]:
     """Retrieves previously resolved tickets similar to the current one.
 
     Use this to check how similar problems were diagnosed and solved in
@@ -97,25 +99,7 @@ def create_external_ticket(ticket_id: int, summary: str) -> dict:
 
 
 @mcp.tool
-def notify_team(message: str, urgency: str = "normal") -> dict:
-    """Sends a notification to the human support team.
-
-    Use this alongside create_external_ticket when escalating, or on its
-    own for lower-impact alerts that don't require a full ticket.
-
-    Args:
-        message: The notification content.
-        urgency: One of "low", "normal", "high". Defaults to "normal".
-
-    Returns:
-        A dict confirming whether the notification was sent and via
-        which channel.
-    """
-    return {"notified": True, "channel": "log"}
-
-
-@mcp.tool
-def notify_team(message: str, urgency: str = "normal") -> dict:
+def notify_team(message: str, urgency: Literal["low", "normal", "high"] = "normal") -> dict:
     """Sends a notification to the human support team.
 
     Use this alongside create_external_ticket when escalating, or on its

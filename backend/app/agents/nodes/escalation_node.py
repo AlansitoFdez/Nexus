@@ -16,7 +16,7 @@ from fastmcp import Client
 async def escalation_node(state: TicketState) -> dict:
     """Creates an external ticket and notifies the team, given the ticket's diagnosis so far."""
     try:
-        async with Client(settings.MCP_SERVER_URL) as client:
+        async with Client(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY) as client:
             await client.call_tool(
                 "create_external_ticket",
                 {"ticket_id": state["ticket_id"], "summary": state["diagnosis"]},
