@@ -6,7 +6,7 @@ The rest of the pipeline (router, specialists, synthesizer) fills in
 status and produces Finding rows as it processes the request.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, CheckConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, CheckConstraint
 import sqlalchemy as sa
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -36,6 +36,7 @@ class AnalysisRequest(Base):
     status = Column(String(20), server_default=sa.text("'pending'"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    post_to_pr = Column(Boolean, server_default=sa.text("false"), nullable=False)
 
     findings = relationship("Finding", back_populates="analysis_request")
 
