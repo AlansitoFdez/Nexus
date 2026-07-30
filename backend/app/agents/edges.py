@@ -1,65 +1,12 @@
-"""Conditional edges routing tickets between nodes based on state.
+"""Conditional edges routing tickets between nodes in the code-review graph.
 
-Kept together in a single file (not split per edge) since all edges
-share the same reason to change: graph routing logic, best understood
-as a whole rather than scattered across files.
+Pendiente de reconstrucción (Fase 2.4): route_after_entry,
+route_after_classifier, route_after_kb_searcher, route_after_diagnosis
+y route_after_human_approval se eliminaron — enrutaban entre nodos del
+dominio de tickets ya eliminados en la limpieza de la Fase 1.3
+(classifier_node, kb_searcher_node, diagnosis_node, response_node,
+escalation_node). No tienen equivalente por adaptación: la 2.4 introduce
+fan-out dinámico (edges estáticos con guardia interna, o Send()), un
+problema estructuralmente distinto a "una rama, un destino" que era todo
+lo que este archivo resolvía hasta ahora.
 """
-
-from app.agents.state import TicketState
-
-
-def route_after_entry(state: TicketState) -> str:
-    """Routes to classifier, unless entry_node failed."""
-    if state.get("error"):
-        return "error"
-    return "classifier"
-
-
-def route_after_classifier(state: TicketState) -> str:
-    """Decides which node processes the ticket next, based on its category.
-
-    Returns "error" if the classifier failed, otherwise routes urgent
-    tickets straight to escalation, and everything else (bug, usage
-    questions, configuration issues) to the knowledge base searcher —
-    every category benefits from checking the KB before proceeding.
-    """
-    error = state.get("error")
-
-    if error is None:
-        classification = state["classification"]
-
-        if classification == "urgent":
-            return "escalation"
-        elif classification == "bug":
-            return "kb_searcher"
-        elif classification == "usage_question":
-            return "kb_searcher"
-        elif classification == "configuration":
-            return "kb_searcher"
-    else:
-        return "error"
-
-
-def route_after_kb_searcher(state: TicketState) -> str:
-    """Routes bugs to full diagnosis; usage/configuration go straight to response."""
-    if state.get("error"):
-        return "error"
-    if state["classification"] == "bug":
-        return "diagnosis"
-    return "response"
-
-
-def route_after_diagnosis(state: TicketState) -> str:
-    """Routes to human approval only when high-impact actions were proposed."""
-    if state.get("error"):
-        return "error"
-    if state["pending_actions"]:
-        return "human_approval"
-    return "response"
-
-
-def route_after_human_approval(state: TicketState) -> str:
-    """Routes to escalation if rejected, otherwise proceeds to the response."""
-    if state.get("escalated"):
-        return "escalation"
-    return "response"
