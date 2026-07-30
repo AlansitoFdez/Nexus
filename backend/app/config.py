@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     FRONTEND_URL: str = "http://localhost:3000"
 
-    CLASSIFIER_MODEL: str = "openai/gpt-oss-20b"
-    DIAGNOSIS_MODEL: str = "openai/gpt-oss-120b"
+    ROUTER_MODEL: str = "openai/gpt-oss-20b"
+    SPECIALIST_MODEL: str = "openai/gpt-oss-120b"
 
     model_config = SettingsConfigDict(env_file=".env")
 
