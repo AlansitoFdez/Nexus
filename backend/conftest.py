@@ -6,7 +6,6 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.models.ticket import Ticket
-from app.models.knowledge_base import KnowledgeBaseEntry
 from app.models.approval import Approval
 
 TEST_DATABASE_URL = "postgresql://user:password@localhost:5434/nexus_test"

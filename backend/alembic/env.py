@@ -12,10 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.database import Base
 from app.models.ticket import Ticket
-from app.models.knowledge_base import KnowledgeBaseEntry
 from app.models.approval import Approval
-from app.models.external_ticket import ExternalTicket
-from app.models.notification import Notification
 from app.models.analysis_request import AnalysisRequest
 from app.models.finding import Finding
 from app.config import settings
