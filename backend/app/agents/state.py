@@ -1,34 +1,30 @@
-"""Shared state that flows through every node of the LangGraph pipeline.
+"""Shared state that flows through every node of the code review graph.
 
-Unlike a SQLAlchemy model (persistence) or a Pydantic schema (API
-validation), this state only exists for the lifetime of a single graph
-execution — it's the "expediente" that travels node to node. It is
-never itself persisted as a whole; individual fields get written to
-the Ticket table via TicketUpdate as each node produces them.
+Like TicketState before it, this only exists for the lifetime of a
+single graph execution. Individual fields get written to the
+AnalysisRequest/Finding tables via the corresponding repositories as
+nodes produce them — this TypedDict itself is never persisted whole.
 
-Fields annotated with a reducer (operator.add) are written by more
-than one node across the pipeline and must accumulate rather than
-overwrite; every other field has exactly one writer node and uses the
-default overwrite behavior.
+`findings` is the central case for the operator.add reducer in this
+domain: unlike `node_history` (written by every node in sequence),
+`findings` is written by multiple specialist nodes running in
+parallel. Without the reducer, only the last specialist to finish
+would "win," silently discarding the others' results.
 """
 
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 
-class TicketState(TypedDict):
-    ticket_id: int
-    original_text: str
-    cleaned_text: str | None
-    classification: str | None
-    urgency: str | None
-    confidence: float | None
-    kb_documents: list[dict]
-    similar_tickets: list[dict]
-    diagnosis: str | None
-    proposed_response: str | None
-    pending_actions: list[dict]
-    escalated: bool
+class CodeReviewState(TypedDict):
+    analysis_request_id: int
+    source_type: Literal["github_repo", "pasted_code"]
+    repo_url: str | None
+    pasted_code: str | None
+    review_request: str
+    code_content: str | None
+    agents_to_run: list[str]
+    findings: Annotated[list[dict], operator.add]
+    final_report: str | None
     node_history: Annotated[list[str], operator.add]
     error: str | None
-    diagnosis_confidence: float | None
