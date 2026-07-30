@@ -20,6 +20,7 @@ class AnalysisRequestCreate(BaseModel):
     repo_url: str | None = None
     pasted_code: str | None = None
     review_request: str
+    post_to_pr: bool = False
 
     @model_validator(mode="after")
     def check_exactly_one_source(self) -> "AnalysisRequestCreate":
@@ -40,6 +41,7 @@ class AnalysisRequestResponse(BaseModel):
     repo_url: str | None
     pasted_code: str | None
     review_request: str
+    post_to_pr: bool
     status: str
     findings: list[FindingResponse]
     created_at: datetime

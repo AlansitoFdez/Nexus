@@ -51,3 +51,15 @@ def test_create_fails_when_pasted_code_source_missing_pasted_code():
     """source_type='pasted_code' without pasted_code should fail validation."""
     with pytest.raises(ValidationError):
         AnalysisRequestCreate(source_type="pasted_code", review_request="revisa seguridad")
+
+
+def test_analysis_request_create_defaults_post_to_pr_to_false():
+    request = AnalysisRequestCreate(source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa x")
+    assert request.post_to_pr is False
+
+
+def test_analysis_request_create_accepts_explicit_post_to_pr_true():
+    request = AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa x", post_to_pr=True
+    )
+    assert request.post_to_pr is True
