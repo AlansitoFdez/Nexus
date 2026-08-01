@@ -13,6 +13,7 @@ def test_settings_loads_with_all_required_env_vars(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "fake-key")
     monkeypatch.setenv("MCP_SERVER_URL", "http://localhost:8001")
     monkeypatch.setenv("MCP_API_KEY", "fake-mcp-key")
+    monkeypatch.setenv("GITHUB_TOKEN", "fake-github-token")
 
     settings = Settings()
 
@@ -27,6 +28,7 @@ def test_settings_fails_when_required_var_is_missing(monkeypatch):
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
     monkeypatch.setenv("MCP_SERVER_URL", "http://localhost:8001")
     monkeypatch.setenv("MCP_API_KEY", "fake-mcp-key")
+    monkeypatch.setenv("GITHUB_TOKEN", "fake-github-token")
 
     with pytest.raises(ValidationError):
         Settings(_env_file=None)

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     MCP_SERVER_URL: str
     MCP_API_KEY: str
+    GITHUB_TOKEN: str
     ENVIRONMENT: str = "development"
     FRONTEND_URL: str = "http://localhost:3000"
 
