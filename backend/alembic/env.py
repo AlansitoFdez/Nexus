@@ -11,7 +11,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from app.database import Base
-from app.models.ticket import Ticket
 from app.models.approval import Approval
 from app.models.analysis_request import AnalysisRequest
 from app.models.finding import Finding

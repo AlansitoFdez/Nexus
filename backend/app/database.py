@@ -28,4 +28,4 @@ def get_db():
     finally:
         db.close()
 
-from app.models import ticket, approval, analysis_request, finding
+from app.models import approval, analysis_request, finding
