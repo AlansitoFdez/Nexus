@@ -1,12 +1,49 @@
-"""Conditional edges routing tickets between nodes in the code-review graph.
+"""Conditional edges routing between nodes in the code-review graph.
 
-Pendiente de reconstrucción (Fase 2.4): route_after_entry,
-route_after_classifier, route_after_kb_searcher, route_after_diagnosis
-y route_after_human_approval se eliminaron — enrutaban entre nodos del
-dominio de tickets ya eliminados en la limpieza de la Fase 1.3
-(classifier_node, kb_searcher_node, diagnosis_node, response_node,
-escalation_node). No tienen equivalente por adaptación: la 2.4 introduce
-fan-out dinámico (edges estáticos con guardia interna, o Send()), un
-problema estructuralmente distinto a "una rama, un destino" que era todo
-lo que este archivo resolvía hasta ahora.
+route_after_router implements Fase 2.4's dynamic fan-out: rather than a
+fixed edge to one destination (the pattern used for every conditional
+edge in the ticket domain), this returns a list of Send objects, one
+per specialist the router selected — LangGraph's mechanism for a
+branch count that isn't known until the graph actually runs.
+
+The Sends' deltas still merge back into CodeReviewState through the
+same reducers defined in Fase 2.1 (operator.add on findings and
+node_history) — Send() only decides who gets invoked and with what
+payload, not how concurrent results get combined.
 """
+
+from langgraph.graph import END
+from langgraph.types import Send
+
+from app.agents.state import CodeReviewState
+
+AGENT_TO_NODE_NAME = {
+    "security": "security_agent",
+    "performance": "performance_agent",
+    "design_patterns": "design_patterns_agent",
+    "best_practices": "best_practices_agent",
+}
+
+
+def route_after_router(state: CodeReviewState) -> list[Send] | str:
+    """Fans out to every specialist the router selected, or ends the
+    graph if the router itself failed.
+
+    Each Send carries only what a specialist node needs (code_content,
+    review_request, analysis_request_id) rather than the full shared
+    state, keeping each specialist's input surface minimal.
+    """
+    if state.get("error"):
+        return END
+
+    return [
+        Send(
+            AGENT_TO_NODE_NAME[agent_name],
+            {
+                "code_content": state["code_content"],
+                "review_request": state["review_request"],
+                "analysis_request_id": state["analysis_request_id"],
+            },
+        )
+        for agent_name in state["agents_to_run"]
+    ]
