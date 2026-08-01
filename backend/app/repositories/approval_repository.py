@@ -45,6 +45,10 @@ class ApprovalRepository:
         """Retrieves an Approval by its ID, or None if it doesn't exist."""
         return self.db.query(Approval).filter(Approval.id == approval_id).first()
 
+    def get_all(self) -> list[Approval]:
+        """Retrieves all approvals."""
+        return self.db.query(Approval).all()
+
     def update(self, approval_id: int, data: ApprovalUpdate) -> Approval:
         """Applies a decision (approved/rejected) to a pending approval.
 
