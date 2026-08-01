@@ -1,16 +1,17 @@
 """Tests for the Approval model's default status behavior."""
 
-from app.models.ticket import Ticket
+from app.models.analysis_request import AnalysisRequest
 from app.models.approval import Approval
 
 
 def test_approval_defaults_to_pending_status(db_session):
-    """A newly created Approval should default to status='pending', not None."""
-    ticket = Ticket(original_text="acceso denegado al panel")
-    db_session.add(ticket)
+    analysis_request = AnalysisRequest(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    )
+    db_session.add(analysis_request)
     db_session.commit()
 
-    approval = Approval(ticket_id=ticket.id, proposed_action="restablecer permisos")
+    approval = Approval(analysis_request_id=analysis_request.id, proposed_action="publicar comentario en el PR")
     db_session.add(approval)
     db_session.commit()
     db_session.refresh(approval)
