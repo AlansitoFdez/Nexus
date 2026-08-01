@@ -26,6 +26,7 @@ class CodeReviewState(TypedDict):
     code_content: str | None
     agents_to_run: list[str]
     findings: Annotated[list[dict], operator.add]
+    failed_specialists: Annotated[list[str], operator.add]
     final_report: str | None
     node_history: Annotated[list[str], operator.add]
     error: str | None
