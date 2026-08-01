@@ -33,10 +33,11 @@ class AnalysisRequest(Base):
     repo_url = Column(String(500), nullable=True)
     pasted_code = Column(Text, nullable=True)
     review_request = Column(Text, nullable=False)
-    status = Column(String(20), server_default=sa.text("'pending'"), nullable=False)
+    status = Column(String(30), server_default=sa.text("'pending'"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     post_to_pr = Column(Boolean, server_default=sa.text("false"), nullable=False)
+    final_report = Column(Text, nullable=True)
 
     findings = relationship("Finding", back_populates="analysis_request")
 
