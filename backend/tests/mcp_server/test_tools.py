@@ -1,12 +1,13 @@
 """Tests for MCP tools, using FastMCP's in-memory client.
 
-query_tickets_db was retired along with the ticket domain. As of Fase
-3.1, the server exposes its first real tool for the code review
-domain: read_repository_files. fetch_repository_files itself is
-mocked here — its own logic (URL parsing, zip filtering, GitHub error
-translation) is covered in test_github_client.py; this file only
-checks that the tool is registered and correctly wired to it,
-including translating GitHubAPIError into a client-visible ToolError.
+query_tickets_db was retired along with the ticket domain. The server
+now exposes two tools for the code review domain: read_repository_files
+(Fase 3.1) and get_pr_diff (Fase 3.2). Both underlying github_client
+functions are mocked here — their own logic (URL parsing, zip
+filtering/diff fetching, GitHub error translation) is covered in
+test_github_client.py; this file only checks that each tool is
+registered and correctly wired, including translating GitHubAPIError
+into a client-visible ToolError.
 """
 
 from unittest.mock import AsyncMock, patch
@@ -21,11 +22,11 @@ from app.mcp_server.instance import mcp
 
 
 @pytest.mark.asyncio
-async def test_server_exposes_read_repository_files():
+async def test_server_exposes_both_tools():
     async with Client(mcp) as client:
         tools_list = await client.list_tools()
 
-    assert [tool.name for tool in tools_list] == ["read_repository_files"]
+    assert {tool.name for tool in tools_list} == {"read_repository_files", "get_pr_diff"}
 
 
 @pytest.mark.asyncio
@@ -53,3 +54,39 @@ async def test_read_repository_files_translates_github_error_to_tool_error():
                 await client.call_tool(
                     "read_repository_files", {"repo_url": "https://github.com/alan/missing"}
                 )
+
+
+@pytest.mark.asyncio
+async def test_get_pr_diff_returns_fetched_diff():
+    with patch(
+        "app.mcp_server.tools._get_pr_diff",
+        AsyncMock(return_value="diff --git a/src/main.py b/src/main.py\n+print('nuevo')\n"),
+    ):
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "get_pr_diff", {"repo_url": "https://github.com/alan/nexus", "pr_number": 42}
+            )
+
+    assert result.data == "diff --git a/src/main.py b/src/main.py\n+print('nuevo')\n"
+
+
+@pytest.mark.asyncio
+async def test_get_pr_diff_translates_github_error_to_tool_error():
+    with patch(
+        "app.mcp_server.tools._get_pr_diff",
+        AsyncMock(side_effect=GitHubAPIError("PR not found")),
+    ):
+        async with Client(mcp) as client:
+            with pytest.raises(ToolError, match="PR not found"):
+                await client.call_tool(
+                    "get_pr_diff", {"repo_url": "https://github.com/alan/nexus", "pr_number": 999}
+                )
+
+
+@pytest.mark.asyncio
+async def test_get_pr_diff_rejects_non_positive_pr_number():
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError):
+            await client.call_tool(
+                "get_pr_diff", {"repo_url": "https://github.com/alan/nexus", "pr_number": 0}
+            )
