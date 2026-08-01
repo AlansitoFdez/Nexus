@@ -20,3 +20,25 @@ class RouterDecision(BaseModel):
 
     agents_to_run: list[Literal["security", "performance", "design_patterns", "best_practices"]]
     reasoning: str
+
+
+class SpecialistFinding(BaseModel):
+    """A single issue detected by a specialist agent's structured output.
+
+    Mirrors FindingCreate's shape but lives here, not in app/schemas/,
+    because this is the LLM-facing validation boundary — the specialist
+    node translates each SpecialistFinding into a FindingCreate itself,
+    attaching specialist name and analysis_request_id, neither of which
+    the LLM should be deciding.
+    """
+
+    severity: Literal["critical", "high", "medium", "low"]
+    description: str
+    file_path: str | None = None
+    suggestion: str | None = None
+
+
+class SpecialistOutput(BaseModel):
+    """A specialist's full structured output: zero or more findings."""
+
+    findings: list[SpecialistFinding]
