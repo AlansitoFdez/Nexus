@@ -40,6 +40,7 @@ class AnalysisRequest(Base):
     final_report = Column(Text, nullable=True)
 
     findings = relationship("Finding", back_populates="analysis_request")
+    approvals = relationship("Approval", back_populates="analysis_request")
 
     __table_args__ = (
         CheckConstraint(
