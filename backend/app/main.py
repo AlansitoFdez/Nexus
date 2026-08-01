@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  
-from app.api import tickets, approvals, websocket, analysis_requests
+from app.api import approvals, websocket, analysis_requests
 from app.config import settings
 
 app = FastAPI(title="Nexus")
@@ -21,7 +21,6 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-app.include_router(tickets.router)
 app.include_router(approvals.router)
 app.include_router(websocket.router)
 app.include_router(analysis_requests.router)
