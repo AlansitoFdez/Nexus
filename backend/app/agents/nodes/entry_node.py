@@ -53,7 +53,7 @@ async def entry_node(state: CodeReviewState) -> dict:
     finally:
         db.close()
 
-    await manager.send_to_ticket(state["analysis_request_id"], "Procesando análisis...")
+    await manager.send_to_analysis_request(state["analysis_request_id"], "Procesando análisis...")
 
     return {
         "code_content": code_content,
