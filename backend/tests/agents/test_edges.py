@@ -3,7 +3,7 @@
 from langgraph.graph import END
 from langgraph.types import Send
 
-from app.agents.edges import route_after_router
+from app.agents.edges import route_after_router, route_after_entry, route_after_synthesizer
 
 
 def test_route_after_router_fans_out_to_selected_agents():
@@ -58,7 +58,7 @@ def test_route_after_router_returns_empty_list_when_no_agents_selected():
     assert result == []
 
 
-def test_route_after_router_ends_graph_when_router_failed():
+def test_route_after_router_routes_to_failure_node_when_router_failed():
     state = {
         "agents_to_run": [],
         "code_content": None,
@@ -69,4 +69,24 @@ def test_route_after_router_ends_graph_when_router_failed():
 
     result = route_after_router(state)
 
-    assert result == END
+    assert result == "failure_node"
+
+
+def test_route_after_entry_proceeds_to_router_when_no_error():
+    state = {"error": None}
+    assert route_after_entry(state) == "router_node"
+
+
+def test_route_after_entry_routes_to_failure_node_on_error():
+    state = {"error": "AnalysisRequest 1 not found during entry_node"}
+    assert route_after_entry(state) == "failure_node"
+
+
+def test_route_after_synthesizer_proceeds_to_human_approval_when_no_error():
+    state = {"error": None}
+    assert route_after_synthesizer(state) == "human_approval_node"
+
+
+def test_route_after_synthesizer_ends_on_error():
+    state = {"error": "AnalysisRequest 1 not found during synthesizer_node"}
+    assert route_after_synthesizer(state) == END

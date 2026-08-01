@@ -1,15 +1,19 @@
 """Conditional edges routing between nodes in the code-review graph.
 
-route_after_router implements Fase 2.4's dynamic fan-out: rather than a
-fixed edge to one destination (the pattern used for every conditional
-edge in the ticket domain), this returns a list of Send objects, one
-per specialist the router selected — LangGraph's mechanism for a
-branch count that isn't known until the graph actually runs.
+route_after_entry and route_after_router both redirect to failure_node
+on error (Fase 2.11) instead of ending the graph silently — this keeps
+the AnalysisRequest's status honestly terminal instead of stuck at
+"running" forever.
 
-The Sends' deltas still merge back into CodeReviewState through the
-same reducers defined in Fase 2.1 (operator.add on findings and
-node_history) — Send() only decides who gets invoked and with what
-payload, not how concurrent results get combined.
+route_after_router implements Fase 2.4's dynamic fan-out: rather than a
+fixed edge to one destination, this returns a list of Send objects, one
+per specialist the router selected — LangGraph's mechanism for a
+branch count that isn't known until the graph actually runs. The
+Sends' deltas merge back into CodeReviewState through the reducers
+defined in Fase 2.1 (operator.add on findings and node_history).
+
+route_after_synthesizer skips human_approval_node if synthesizer_node
+itself failed to persist — nothing meaningful to gate at that point.
 """
 
 from langgraph.graph import END
@@ -25,16 +29,19 @@ AGENT_TO_NODE_NAME = {
 }
 
 
-def route_after_router(state: CodeReviewState) -> list[Send] | str:
-    """Fans out to every specialist the router selected, or ends the
-    graph if the router itself failed.
-
-    Each Send carries only what a specialist node needs (code_content,
-    review_request, analysis_request_id) rather than the full shared
-    state, keeping each specialist's input surface minimal.
-    """
+def route_after_entry(state: CodeReviewState) -> str:
+    """Routes to router_node normally, or to failure_node if entry_node
+    couldn't resolve code_content."""
     if state.get("error"):
-        return END
+        return "failure_node"
+    return "router_node"
+
+
+def route_after_router(state: CodeReviewState) -> list[Send] | str:
+    """Fans out to every specialist the router selected, or routes to
+    failure_node if the router itself failed."""
+    if state.get("error"):
+        return "failure_node"
 
     return [
         Send(
@@ -47,3 +54,11 @@ def route_after_router(state: CodeReviewState) -> list[Send] | str:
         )
         for agent_name in state["agents_to_run"]
     ]
+
+
+def route_after_synthesizer(state: CodeReviewState) -> str:
+    """Skips human_approval_node if synthesizer_node itself failed to
+    persist the final report — nothing meaningful left to gate."""
+    if state.get("error"):
+        return END
+    return "human_approval_node"
