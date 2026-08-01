@@ -43,6 +43,7 @@ class AnalysisRequestResponse(BaseModel):
     review_request: str
     post_to_pr: bool
     status: str
+    final_report: str | None
     findings: list[FindingResponse]
     created_at: datetime
     updated_at: datetime | None
@@ -58,4 +59,5 @@ class AnalysisRequestUpdate(BaseModel):
     client-side use beyond perhaps cancelling a request.
     """
 
-    status: Literal["pending", "running", "completed", "failed"] | None = None
+    status: Literal["pending", "running", "completed", "completed_with_errors", "failed"] | None = None
+    final_report: str | None = None
