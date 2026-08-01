@@ -1,4 +1,5 @@
-"""Tests for github_client — the real GitHub API integration (Fase 3.1).
+"""Tests for github_client — the real GitHub API integration (Fase 3.1
+and 3.2).
 
 All network calls are mocked; nothing here talks to the actual GitHub
 API. That's the difference between this and an end-to-end check: it
@@ -15,6 +16,7 @@ import pytest
 from app.mcp_server.github_client import (
     GitHubAPIError,
     fetch_repository_files,
+    get_pr_diff,
     parse_repo_url,
 )
 
@@ -30,13 +32,14 @@ def _make_zip(files: dict[str, bytes]) -> bytes:
     return buffer.getvalue()
 
 
-def _mock_response(status_code: int = 200, json_data=None, content: bytes = b"", headers=None):
+def _mock_response(status_code: int = 200, json_data=None, content: bytes = b"", headers=None, text: str = ""):
     response = MagicMock()
     response.status_code = status_code
     response.is_error = status_code >= 400
     response.headers = headers or {}
     response.json.return_value = json_data or {}
     response.content = content
+    response.text = text
     return response
 
 
@@ -140,3 +143,43 @@ class TestFetchRepositoryFiles:
 
         assert "huge.py" not in result
         assert "small.py" in result
+
+
+class TestGetPrDiff:
+    @pytest.mark.asyncio
+    async def test_success_returns_raw_diff_text(self):
+        diff_text = (
+            "diff --git a/src/main.py b/src/main.py\n"
+            "+print('nuevo')\n"
+        )
+        responses = [_mock_response(200, text=diff_text)]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            result = await get_pr_diff("https://github.com/alan/nexus", 42)
+
+        assert result == diff_text
+
+    @pytest.mark.asyncio
+    async def test_empty_diff_is_not_an_error(self):
+        responses = [_mock_response(200, text="")]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            result = await get_pr_diff("https://github.com/alan/nexus", 42)
+
+        assert result == ""
+
+    @pytest.mark.asyncio
+    async def test_pr_not_found_raises_clean_error(self):
+        responses = [_mock_response(404)]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            with pytest.raises(GitHubAPIError, match="not found"):
+                await get_pr_diff("https://github.com/alan/nexus", 999)
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_raises_clean_error(self):
+        responses = [_mock_response(403, headers={"X-RateLimit-Remaining": "0"})]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            with pytest.raises(GitHubAPIError, match="rate limit"):
+                await get_pr_diff("https://github.com/alan/nexus", 42)

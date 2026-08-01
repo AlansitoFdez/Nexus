@@ -1,4 +1,5 @@
-"""Client for reading repository contents from the real GitHub REST API.
+"""Client for the real GitHub REST API: reading repository contents
+and pull request diffs.
 
 First genuinely external integration in Nexus (Fase 3.1) — unlike
 create_external_ticket in the retired ticket domain, which simulated an
@@ -86,7 +87,7 @@ def _headers() -> dict[str, str]:
 
 def _raise_for_github_status(response: httpx.Response, context: str) -> None:
     if response.status_code == 404:
-        raise GitHubAPIError(f"{context}: not found (repo missing, private, or ref doesn't exist)")
+        raise GitHubAPIError(f"{context}: not found or inaccessible (missing, private, or doesn't exist)")
     if response.status_code in (401, 403):
         if response.headers.get("X-RateLimit-Remaining") == "0":
             raise GitHubAPIError(f"{context}: GitHub API rate limit exceeded, try again later")
@@ -159,3 +160,26 @@ async def fetch_repository_files(repo_url: str) -> str:
         _raise_for_github_status(zip_response, f"Downloading archive for {owner}/{repo}")
 
     return _extract_source_files(zip_response.content)
+
+
+async def get_pr_diff(repo_url: str, pr_number: int) -> str:
+    """Fetches the unified diff of a specific pull request.
+
+    Uses GitHub's content negotiation on the pulls endpoint (Accept:
+    application/vnd.github.v3.diff) to get the diff text directly in
+    one request, instead of fetching PR metadata (base/head SHAs) and
+    computing the diff ourselves against the compare API.
+
+    Returns the raw unified diff as a string — an empty string is a
+    legitimate result for a PR with no changes, not an error.
+    """
+    owner, repo = parse_repo_url(repo_url)
+
+    headers = _headers() | {"Accept": "application/vnd.github.v3.diff"}
+    async with httpx.AsyncClient(headers=headers, timeout=30.0, follow_redirects=True) as client:
+        response = await client.get(
+            f"{GITHUB_API_BASE}/repos/{owner}/{repo}/pulls/{pr_number}"
+        )
+        _raise_for_github_status(response, f"Fetching diff for {owner}/{repo}#{pr_number}")
+
+    return response.text
