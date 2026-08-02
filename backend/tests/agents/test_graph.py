@@ -104,7 +104,8 @@ async def test_graph_pauses_at_human_approval_and_resumes_on_approval(db_session
              patch("app.agents.nodes.entry_node.SessionLocal", TestSessionLocal), \
              patch("app.agents.nodes.specialists.security_agent.SessionLocal", TestSessionLocal), \
              patch("app.agents.nodes.synthesizer_node.SessionLocal", TestSessionLocal), \
-             patch("app.agents.nodes.human_approval_node.SessionLocal", TestSessionLocal):
+             patch("app.agents.nodes.human_approval_node.SessionLocal", TestSessionLocal), \
+             patch("app.agents.nodes.post_comment_node.SessionLocal", TestSessionLocal):
 
             result = await graph.ainvoke(initial_state, config=config)
             assert "__interrupt__" in result, f"Grafo no se pausó; estado final: {result}"
