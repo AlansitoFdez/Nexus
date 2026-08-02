@@ -23,6 +23,7 @@ class CodeReviewState(TypedDict):
     pasted_code: str | None
     review_request: str
     post_to_pr: bool
+    pr_number: int | None
     code_content: str | None
     agents_to_run: list[str]
     findings: Annotated[list[dict], operator.add]
