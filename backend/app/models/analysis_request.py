@@ -24,6 +24,12 @@ class AnalysisRequest(Base):
             router node to decide which specialists to run.
         findings: All Finding rows produced by specialists for this
             request.
+        pr_number: The pull request to comment on if post_to_pr is
+            True. Only meaningful alongside source_type="github_repo"
+            — enforced by ck_analysis_requests_post_to_pr_requires_pr_number,
+            since posting an automated review onto a PR whose code was
+            never actually analyzed (the pasted_code case) would be
+            misleading to whoever reads that comment.
     """
 
     __tablename__ = "analysis_requests"
@@ -38,6 +44,7 @@ class AnalysisRequest(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     post_to_pr = Column(Boolean, server_default=sa.text("false"), nullable=False)
     final_report = Column(Text, nullable=True)
+    pr_number = Column(Integer, nullable=True)
 
     findings = relationship("Finding", back_populates="analysis_request")
     approvals = relationship("Approval", back_populates="analysis_request")
@@ -47,5 +54,10 @@ class AnalysisRequest(Base):
             "(source_type = 'github_repo' AND repo_url IS NOT NULL AND pasted_code IS NULL) OR "
             "(source_type = 'pasted_code' AND pasted_code IS NOT NULL AND repo_url IS NULL)",
             name="ck_analysis_requests_exactly_one_source",
+        ),
+        CheckConstraint(
+            "post_to_pr = false OR "
+            "(post_to_pr = true AND source_type = 'github_repo' AND pr_number IS NOT NULL)",
+            name="ck_analysis_requests_post_to_pr_requires_pr_number",
         ),
     )
