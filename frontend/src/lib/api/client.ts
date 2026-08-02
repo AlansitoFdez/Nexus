@@ -95,8 +95,12 @@ export function getApproval(id: number): Promise<Approval> {
   return request<Approval>(`/approvals/${id}`);
 }
 
-export function listApprovals(): Promise<Approval[]> {
-  return request<Approval[]>("/approvals/");
+export function listApprovals(filter?: { analysisRequestId?: number }): Promise<Approval[]> {
+  const query =
+    filter?.analysisRequestId !== undefined
+      ? `?analysis_request_id=${filter.analysisRequestId}`
+      : "";
+  return request<Approval[]>(`/approvals/${query}`);
 }
 
 /**
