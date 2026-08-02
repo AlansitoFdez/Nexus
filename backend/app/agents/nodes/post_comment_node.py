@@ -20,11 +20,12 @@ misreport what actually happened (same reasoning already applied to
 failed_specialists vs. error in Fase 2.5, extended to a new kind of
 partial failure).
 
-There's no persisted field yet for "did the PR comment succeed, and
-what's its URL" — surfaced only transiently via WebSocket for now.
-Noted here as a conscious deferral, not left implicit: a real dashboard
-(Fase 4) would likely want this queryable after the fact, not just
-live.
+Persists the comment's URL on success (pr_comment_url, Fase 4) — closes
+what used to be a conscious deferral: this used to be surfaced only
+transiently via WebSocket, with nothing queryable after the fact. Still
+never touched on failure, and still never routes through
+state["error"] — same reasoning as before, this is a side-action outcome,
+not the review's own result.
 """
 
 import logging
@@ -34,6 +35,12 @@ from fastmcp import Client
 from app.agents.state import CodeReviewState
 from app.api.websocket import manager
 from app.config import settings
+from app.database import SessionLocal
+from app.repositories.analysis_request_repository import (
+    AnalysisRequestRepository,
+    AnalysisRequestNotFoundError,
+)
+from app.schemas.analysis_request import AnalysisRequestUpdate
 
 logger = logging.getLogger("nexus.post_comment")
 
@@ -61,6 +68,22 @@ async def post_comment_node(state: CodeReviewState) -> dict:
             state["analysis_request_id"], "No se pudo publicar el comentario en el PR."
         )
         return {"node_history": ["post_comment"]}
+
+    db = SessionLocal()
+    try:
+        repo = AnalysisRequestRepository(db)
+        repo.update(state["analysis_request_id"], AnalysisRequestUpdate(pr_comment_url=result.data))
+    except AnalysisRequestNotFoundError:
+        # Shouldn't happen by this point in the graph — the row has
+        # already been read and written to by every earlier node — but
+        # this is a side-action's own persistence, not the review's
+        # result, so a miss here still must not touch state["error"].
+        logger.error(
+            "AnalysisRequest %s vanished before pr_comment_url could be persisted",
+            state["analysis_request_id"],
+        )
+    finally:
+        db.close()
 
     await manager.send_to_analysis_request(
         state["analysis_request_id"], f"Comentario publicado en el PR: {result.data}"
