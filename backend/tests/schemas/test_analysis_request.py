@@ -59,7 +59,38 @@ def test_analysis_request_create_defaults_post_to_pr_to_false():
 
 
 def test_analysis_request_create_accepts_explicit_post_to_pr_true():
+    """post_to_pr=True is only valid alongside github_repo + pr_number
+    — see check_post_to_pr_requires_github_repo_and_pr_number."""
     request = AnalysisRequestCreate(
-        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa x", post_to_pr=True
+        source_type="github_repo",
+        repo_url="https://github.com/alan/nexus",
+        review_request="revisa x",
+        post_to_pr=True,
+        pr_number=42,
     )
     assert request.post_to_pr is True
+    assert request.pr_number == 42
+
+
+def test_create_fails_when_post_to_pr_true_with_pasted_code():
+    """post_to_pr=True has no PR to target when the source is pasted
+    code — there's no repo to associate the comment with."""
+    with pytest.raises(ValidationError):
+        AnalysisRequestCreate(
+            source_type="pasted_code",
+            pasted_code="def foo(): pass",
+            review_request="revisa x",
+            post_to_pr=True,
+        )
+
+
+def test_create_fails_when_post_to_pr_true_without_pr_number():
+    """post_to_pr=True with a github_repo source but no pr_number still
+    doesn't say which PR to comment on."""
+    with pytest.raises(ValidationError):
+        AnalysisRequestCreate(
+            source_type="github_repo",
+            repo_url="https://github.com/alan/nexus",
+            review_request="revisa x",
+            post_to_pr=True,
+        )

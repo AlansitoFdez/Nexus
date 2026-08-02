@@ -39,7 +39,11 @@ async def test_human_approval_node_skips_when_post_to_pr_is_false(db_session):
 async def test_human_approval_node_persists_approved_decision(db_session):
     analysis_repo = AnalysisRequestRepository(db_session)
     request = analysis_repo.create(AnalysisRequestCreate(
-        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad", post_to_pr=True
+        source_type="github_repo",
+        repo_url="https://github.com/alan/nexus",
+        review_request="revisa seguridad",
+        post_to_pr=True,
+        pr_number=42,
     ))
 
     state = {"analysis_request_id": request.id, "post_to_pr": True, "final_report": "informe completo"}
@@ -62,7 +66,11 @@ async def test_human_approval_node_persists_approved_decision(db_session):
 async def test_human_approval_node_rejects_and_cancels_post_to_pr(db_session):
     analysis_repo = AnalysisRequestRepository(db_session)
     request = analysis_repo.create(AnalysisRequestCreate(
-        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad", post_to_pr=True
+        source_type="github_repo",
+        repo_url="https://github.com/alan/nexus",
+        review_request="revisa seguridad",
+        post_to_pr=True,
+        pr_number=42,
     ))
 
     state = {"analysis_request_id": request.id, "post_to_pr": True, "final_report": "informe completo"}

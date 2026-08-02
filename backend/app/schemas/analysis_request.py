@@ -21,6 +21,7 @@ class AnalysisRequestCreate(BaseModel):
     pasted_code: str | None = None
     review_request: str
     post_to_pr: bool = False
+    pr_number: int | None = None
 
     @model_validator(mode="after")
     def check_exactly_one_source(self) -> "AnalysisRequestCreate":
@@ -30,6 +31,22 @@ class AnalysisRequestCreate(BaseModel):
         else:
             if self.pasted_code is None or self.repo_url is not None:
                 raise ValueError("source_type='pasted_code' requires pasted_code and no repo_url")
+        return self
+
+    @model_validator(mode="after")
+    def check_post_to_pr_requires_github_repo_and_pr_number(self) -> "AnalysisRequestCreate":
+        """post_to_pr=True means "publish the report as a comment on a
+        real PR" — that only makes sense when the code actually
+        reviewed came from that PR's repo (source_type="github_repo")
+        and we know which PR (pr_number). A pasted_code analysis has no
+        associated PR to comment on; allowing post_to_pr there would
+        let the tool post a comment that doesn't describe the code the
+        reader thinks it does.
+        """
+        if self.post_to_pr and (self.source_type != "github_repo" or self.pr_number is None):
+            raise ValueError(
+                "post_to_pr=True requires source_type='github_repo' and pr_number to be set"
+            )
         return self
 
 
@@ -42,6 +59,7 @@ class AnalysisRequestResponse(BaseModel):
     pasted_code: str | None
     review_request: str
     post_to_pr: bool
+    pr_number: int | None
     status: str
     final_report: str | None
     findings: list[FindingResponse]
