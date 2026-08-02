@@ -1,6 +1,7 @@
 """Pydantic schemas for approval creation and API responses."""
 
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 
@@ -25,6 +26,20 @@ class ApprovalResponse(BaseModel):
 
 
 class ApprovalUpdate(BaseModel):
-    """Payload for deciding a pending approval."""
+    """Payload used internally by human_approval_node to persist the
+    final status once the graph resumes — not the client-facing decision
+    payload (see ApprovalDecision below)."""
 
     status: str
+
+
+class ApprovalDecision(BaseModel):
+    """Client-facing payload for POST /approvals/{id}/decision.
+
+    Deliberately a closed Literal, not a free-form str like
+    ApprovalUpdate.status: the only two decisions a human can make on a
+    pending approval are approve or reject — anything else is a client
+    bug, and should fail validation before it ever reaches the graph.
+    """
+
+    decision: Literal["approved", "rejected"]

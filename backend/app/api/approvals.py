@@ -1,16 +1,21 @@
-"""REST endpoints for approval creation and retrieval.
+"""REST endpoints for approval creation, retrieval and decision.
 
-Approving or rejecting a pending approval is not implemented here;
-that logic belongs to the human-in-the-loop graph node (Fase 2.10).
+Deciding a pending approval (POST /{id}/decision) does not update the
+Approval row itself here — that write happens inside human_approval_node
+once the graph actually wakes up from interrupt() (Fase 2.10). This
+endpoint's only job is finding which paused thread the decision belongs
+to and handing it off via resume_analysis(); it returns the approval as
+it stands right now (still "pending"), before the resume has run.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.agents.runner import resume_analysis
 from app.database import get_db
 from app.repositories.approval_repository import ApprovalRepository
 from app.repositories.analysis_request_repository import AnalysisRequestRepository, AnalysisRequestNotFoundError
-from app.schemas.approval import ApprovalCreate, ApprovalResponse
+from app.schemas.approval import ApprovalCreate, ApprovalDecision, ApprovalResponse
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
 
@@ -46,3 +51,39 @@ def list_approvals(db: Session = Depends(get_db)):
     """Retrieves all approvals."""
     repo = ApprovalRepository(db, AnalysisRequestRepository(db))
     return repo.get_all()
+
+
+@router.post("/{approval_id}/decision", response_model=ApprovalResponse)
+def decide_approval(
+    approval_id: int,
+    data: ApprovalDecision,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Submits a human decision for a pending approval and resumes the
+    paused graph in the background.
+
+    Rejects deciding an approval that isn't "pending" anymore (409) —
+    resuming an already-resumed thread has no interrupt() left waiting
+    for it, so silently accepting a second decision would just fail
+    inside the graph instead of at this boundary, where it's cheap and
+    clear to catch.
+    """
+    repo = ApprovalRepository(db, AnalysisRequestRepository(db))
+    approval = repo.get_by_id(approval_id)
+
+    if approval is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
+
+    if approval.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Approval {approval_id} was already decided ({approval.status})",
+        )
+
+    background_tasks.add_task(
+        resume_analysis, request.app.state.graph, approval.analysis_request_id, data.decision
+    )
+
+    return approval
