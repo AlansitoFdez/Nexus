@@ -54,6 +54,7 @@ export interface AnalysisRequest {
   pr_number: number | null;
   status: AnalysisStatus;
   final_report: string | null;
+  pr_comment_url: string | null;
   findings: Finding[];
   created_at: string;
   updated_at: string | null;
@@ -108,6 +109,17 @@ export interface ApprovalCreatePayload {
 
 export interface ApprovalDecisionPayload {
   decision: ApprovalDecisionValue;
+}
+
+// --- Metrics --------------------------------------------------------------
+
+export interface Metrics {
+  total_analysis_requests: number;
+  by_status: Partial<Record<AnalysisStatus, number>>;
+  findings_by_specialist: Partial<Record<Specialist, number>>;
+  findings_by_severity: Partial<Record<Severity, number>>;
+  pr_comments_posted: number;
+  average_analysis_seconds: number | null;
 }
 
 // --- WebSocket events ---------------------------------------------------

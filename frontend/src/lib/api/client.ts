@@ -14,6 +14,7 @@ import type {
   Approval,
   ApprovalCreatePayload,
   ApprovalDecisionPayload,
+  Metrics,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -118,4 +119,16 @@ export function decideApproval(
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+// --- Metrics -------------------------------------------------------------
+
+/**
+ * A point-in-time snapshot, not a live view — unlike AgentTrace/
+ * ApprovalPanel there's no WebSocket involved here, just a plain fetch
+ * the caller can re-run (e.g. on an interval, or a manual refresh
+ * button) if they want it to stay current.
+ */
+export function getMetrics(): Promise<Metrics> {
+  return request<Metrics>("/metrics/");
 }
