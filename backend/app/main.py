@@ -12,7 +12,7 @@ from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 
 from app import models
 from app.agents.graph import build_graph
-from app.api import approvals, websocket, analysis_requests
+from app.api import approvals, websocket, analysis_requests, metrics
 from app.config import settings
 
 
@@ -48,6 +48,7 @@ app.add_middleware(
 app.include_router(approvals.router)
 app.include_router(websocket.router)
 app.include_router(analysis_requests.router)
+app.include_router(metrics.router)
 
 
 @app.get("/health")
