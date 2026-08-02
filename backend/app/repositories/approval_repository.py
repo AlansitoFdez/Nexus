@@ -49,6 +49,22 @@ class ApprovalRepository:
         """Retrieves all approvals."""
         return self.db.query(Approval).all()
 
+    def get_by_analysis_request_id(self, analysis_request_id: int) -> list[Approval]:
+        """Retrieves every Approval tied to one AnalysisRequest.
+
+        In practice this returns at most one row: human_approval_node
+        creates exactly one Approval per graph run, and each
+        AnalysisRequest maps to exactly one run. Still returns a list,
+        not Approval | None, because nothing at this layer enforces that
+        cardinality — it's just how the current graph happens to behave,
+        not a database constraint.
+        """
+        return (
+            self.db.query(Approval)
+            .filter(Approval.analysis_request_id == analysis_request_id)
+            .all()
+        )
+
     def update(self, approval_id: int, data: ApprovalUpdate) -> Approval:
         """Applies a decision (approved/rejected) to a pending approval.
 

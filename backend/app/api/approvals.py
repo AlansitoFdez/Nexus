@@ -47,9 +47,19 @@ def get_approval(approval_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[ApprovalResponse])
-def list_approvals(db: Session = Depends(get_db)):
-    """Retrieves all approvals."""
+def list_approvals(analysis_request_id: int | None = None, db: Session = Depends(get_db)):
+    """Retrieves all approvals, or only the ones for a single analysis
+    request when analysis_request_id is given.
+
+    The filtered form exists for the dashboard: if a user reloads the
+    page after human_approval_node already paused the graph but before
+    they decide, the live "approval_required" WebSocket event that would
+    normally carry the approval_id is gone — this is how the frontend
+    recovers it instead.
+    """
     repo = ApprovalRepository(db, AnalysisRequestRepository(db))
+    if analysis_request_id is not None:
+        return repo.get_by_analysis_request_id(analysis_request_id)
     return repo.get_all()
 
 
