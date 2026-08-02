@@ -25,6 +25,39 @@ def test_create_approval_returns_404_when_analysis_request_does_not_exist(client
     assert response.status_code == 404
 
 
+def test_list_approvals_filters_by_analysis_request_id(client):
+    request_one = client.post("/analysis-requests/", json={
+        "source_type": "pasted_code", "pasted_code": "def foo(): pass", "review_request": "revisa seguridad"
+    }).json()
+    request_two = client.post("/analysis-requests/", json={
+        "source_type": "pasted_code", "pasted_code": "def bar(): pass", "review_request": "revisa rendimiento"
+    }).json()
+    client.post("/approvals/", json={
+        "analysis_request_id": request_one["id"], "proposed_action": "publicar en el PR 1"
+    })
+    client.post("/approvals/", json={
+        "analysis_request_id": request_two["id"], "proposed_action": "publicar en el PR 2"
+    })
+
+    response = client.get(f"/approvals/?analysis_request_id={request_one['id']}")
+
+    assert response.status_code == 200
+    results = response.json()
+    assert len(results) == 1
+    assert results[0]["analysis_request_id"] == request_one["id"]
+
+
+def test_list_approvals_returns_empty_list_when_analysis_request_has_none(client):
+    request = client.post("/analysis-requests/", json={
+        "source_type": "pasted_code", "pasted_code": "def foo(): pass", "review_request": "revisa seguridad"
+    }).json()
+
+    response = client.get(f"/approvals/?analysis_request_id={request['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_decide_approval_returns_404_when_not_found(client):
     response = client.post("/approvals/999/decision", json={"decision": "approved"})
     assert response.status_code == 404

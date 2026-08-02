@@ -43,3 +43,36 @@ def test_get_by_id_returns_none_when_approval_does_not_exist(db_session):
     result = approval_repo.get_by_id(999)
 
     assert result is None
+
+
+def test_get_by_analysis_request_id_returns_only_matching_approvals(db_session):
+    analysis_repo = AnalysisRequestRepository(db_session)
+    approval_repo = ApprovalRepository(db_session, analysis_repo)
+
+    request_one = analysis_repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    ))
+    request_two = analysis_repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def bar(): pass", review_request="revisa rendimiento"
+    ))
+    approval_repo.create(ApprovalCreate(analysis_request_id=request_one.id, proposed_action="publicar en el PR 1"))
+    approval_repo.create(ApprovalCreate(analysis_request_id=request_two.id, proposed_action="publicar en el PR 2"))
+
+    result = approval_repo.get_by_analysis_request_id(request_one.id)
+
+    assert len(result) == 1
+    assert result[0].analysis_request_id == request_one.id
+    assert result[0].proposed_action == "publicar en el PR 1"
+
+
+def test_get_by_analysis_request_id_returns_empty_list_when_none_exist(db_session):
+    analysis_repo = AnalysisRequestRepository(db_session)
+    approval_repo = ApprovalRepository(db_session, analysis_repo)
+
+    request = analysis_repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    ))
+
+    result = approval_repo.get_by_analysis_request_id(request.id)
+
+    assert result == []
