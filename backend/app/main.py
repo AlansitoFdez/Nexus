@@ -4,14 +4,38 @@ Assembles all routers and middleware (CORS) into a single app instance,
 served via `uvicorn app.main:app`.
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 
-from app import models  
+from app import models
+from app.agents.graph import build_graph
 from app.api import approvals, websocket, analysis_requests
 from app.config import settings
 
-app = FastAPI(title="Nexus")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Owns the checkpointer connection's lifecycle for the app's whole
+    lifetime, instead of opening/closing it per request.
+
+    AsyncRedisSaver has no pooling of its own the way SQLAlchemy's
+    `engine`/`SessionLocal` in database.py already do — so this makes
+    that same "connect once, reuse everywhere" behavior explicit for
+    the checkpointer. The compiled graph is built once here (it's a
+    pure function of the checkpointer, per build_graph()'s docstring)
+    and stored on app.state so every request reuses the same compiled
+    graph instead of recompiling it, or reconnecting to Redis, per call.
+    """
+    async with AsyncRedisSaver.from_conn_string(settings.REDIS_URL) as checkpointer:
+        await checkpointer.asetup()
+        app.state.graph = await build_graph(checkpointer)
+        yield
+
+
+app = FastAPI(title="Nexus", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
