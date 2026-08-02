@@ -18,6 +18,7 @@ from app.mcp_server.github_client import (
     fetch_repository_files,
     get_pr_diff,
     parse_repo_url,
+    post_pr_comment,
 )
 
 
@@ -51,6 +52,7 @@ def _mock_client(responses: list):
     client.__aenter__ = AsyncMock(return_value=client)
     client.__aexit__ = AsyncMock(return_value=None)
     client.get = AsyncMock(side_effect=responses)
+    client.post = AsyncMock(side_effect=responses)
     return client
 
 
@@ -183,3 +185,34 @@ class TestGetPrDiff:
         with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
             with pytest.raises(GitHubAPIError, match="rate limit"):
                 await get_pr_diff("https://github.com/alan/nexus", 42)
+
+
+class TestPostPrComment:
+    @pytest.mark.asyncio
+    async def test_success_returns_comment_url(self):
+        responses = [
+            _mock_response(201, json_data={
+                "html_url": "https://github.com/alan/nexus/pull/42#issuecomment-1",
+            }),
+        ]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            result = await post_pr_comment("https://github.com/alan/nexus", 42, "## Hallazgos\nNinguno.")
+
+        assert result == "https://github.com/alan/nexus/pull/42#issuecomment-1"
+
+    @pytest.mark.asyncio
+    async def test_pr_not_found_raises_clean_error(self):
+        responses = [_mock_response(404)]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            with pytest.raises(GitHubAPIError, match="not found"):
+                await post_pr_comment("https://github.com/alan/nexus", 999, "comentario")
+
+    @pytest.mark.asyncio
+    async def test_auth_failure_raises_clean_error(self):
+        responses = [_mock_response(401)]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            with pytest.raises(GitHubAPIError, match="authentication failed"):
+                await post_pr_comment("https://github.com/alan/nexus", 42, "comentario")

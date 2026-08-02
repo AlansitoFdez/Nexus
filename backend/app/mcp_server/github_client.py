@@ -1,5 +1,5 @@
-"""Client for the real GitHub REST API: reading repository contents
-and pull request diffs.
+"""Client for the real GitHub REST API: reading repository contents,
+pull request diffs, and posting PR comments.
 
 First genuinely external integration in Nexus (Fase 3.1) — unlike
 create_external_ticket in the retired ticket domain, which simulated an
@@ -183,3 +183,32 @@ async def get_pr_diff(repo_url: str, pr_number: int) -> str:
         _raise_for_github_status(response, f"Fetching diff for {owner}/{repo}#{pr_number}")
 
     return response.text
+
+
+async def post_pr_comment(repo_url: str, pr_number: int, comment_body: str) -> str:
+    """Posts a comment on a pull request.
+
+    GitHub treats every PR as an issue under the hood for general
+    (non-inline) comments, so this hits the issues comments endpoint
+    rather than a PR-specific one — that's not a Nexus simplification,
+    it's how the GitHub API itself is shaped.
+
+    This is the first genuinely write action Nexus's GitHub
+    integration performs — everything in Fase 3.1/3.2 only read.
+    GITHUB_TOKEN needs write access to pull requests for this to
+    succeed (see the token scope note when GITHUB_TOKEN was added).
+
+    Returns:
+        The html_url of the created comment, so the caller can surface
+        a direct link back to what was just posted.
+    """
+    owner, repo = parse_repo_url(repo_url)
+
+    async with httpx.AsyncClient(headers=_headers(), timeout=30.0, follow_redirects=True) as client:
+        response = await client.post(
+            f"{GITHUB_API_BASE}/repos/{owner}/{repo}/issues/{pr_number}/comments",
+            json={"body": comment_body},
+        )
+        _raise_for_github_status(response, f"Posting comment on {owner}/{repo}#{pr_number}")
+
+    return response.json()["html_url"]
