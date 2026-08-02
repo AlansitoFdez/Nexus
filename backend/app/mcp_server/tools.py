@@ -2,16 +2,11 @@
 
 query_tickets_db was retired along with the rest of the ticket domain
 — it depended on TicketRepository, which no longer exists. This
-module is being rebuilt from Fase 3.1 onward with the new domain's
-tools: read_repository_files, get_pr_diff (both below), and
-post_pr_comment (3.3, pending).
-
-get_pr_diff isn't called by any graph node yet — unlike
-read_repository_files, which entry_node was already designed against
-in Fase 2.2. AnalysisRequest has no pr_number field yet either. Both
-are deliberately deferred to Fase 3.3, to be resolved once
-post_pr_comment's real contract is known (it will need to identify a
-PR too, and possibly more — see the doc for the reasoning).
+module now exposes the full set planned for the code review domain:
+read_repository_files and get_pr_diff (Fase 3.1/3.2, read-only), and
+post_pr_comment (Fase 3.3, below) — the first genuinely write action
+against the GitHub API. post_pr_comment is called by post_comment_node
+after human_approval_node, only when post_to_pr is still True.
 """
 
 from typing import Annotated
@@ -19,7 +14,12 @@ from typing import Annotated
 from fastmcp.exceptions import ToolError
 from pydantic import Field
 
-from app.mcp_server.github_client import GitHubAPIError, fetch_repository_files, get_pr_diff as _get_pr_diff
+from app.mcp_server.github_client import (
+    GitHubAPIError,
+    fetch_repository_files,
+    get_pr_diff as _get_pr_diff,
+    post_pr_comment as _post_pr_comment,
+)
 from app.mcp_server.instance import mcp
 
 
@@ -74,5 +74,40 @@ async def get_pr_diff(
     """
     try:
         return await _get_pr_diff(repo_url, pr_number)
+    except GitHubAPIError as exc:
+        raise ToolError(str(exc)) from exc
+
+
+@mcp.tool
+async def post_pr_comment(
+    repo_url: Annotated[
+        str,
+        Field(description="Full GitHub repository URL, e.g. https://github.com/owner/repo"),
+    ],
+    pr_number: Annotated[
+        int,
+        Field(ge=1, description="The pull request number to comment on."),
+    ],
+    comment_body: Annotated[
+        str,
+        Field(min_length=1, description="The comment text to post, typically the analysis's final_report."),
+    ],
+) -> str:
+    """Posts a comment on a pull request.
+
+    Only ever called after a human has approved the action via
+    human_approval_node — this tool itself has no awareness of
+    approval state, it just executes the write once asked to.
+
+    Args:
+        repo_url: Full GitHub repository URL.
+        pr_number: The pull request number to comment on.
+        comment_body: The comment text to post.
+
+    Returns:
+        The URL of the created comment.
+    """
+    try:
+        return await _post_pr_comment(repo_url, pr_number, comment_body)
     except GitHubAPIError as exc:
         raise ToolError(str(exc)) from exc
