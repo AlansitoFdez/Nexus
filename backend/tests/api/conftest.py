@@ -1,6 +1,7 @@
 """Shared fixtures for API endpoint tests, using an isolated test database."""
 
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -36,7 +37,22 @@ def setup_and_teardown_db():
 
 @pytest.fixture
 def client():
-    """Provides a TestClient bound to the FastAPI app."""
+    """Provides a TestClient bound to the FastAPI app.
+
+    Stands in a mocked compiled graph on app.state.graph instead of
+    letting the real lifespan build one against a real Redis
+    checkpointer. Without this, TestClient's BackgroundTasks run
+    synchronously as part of the request, so every endpoint test that
+    merely creates an AnalysisRequest (most of them, as setup for
+    something else entirely) would trigger a real graph run — real
+    ChatGroq calls, real GitHub reads — which breaks the project's own
+    rule that no test talks to the real network. Graph-execution
+    behavior itself is test_graph.py's job, with its own explicitly
+    mocked LLM/MCP clients.
+    """
+    fake_graph = MagicMock()
+    fake_graph.ainvoke = AsyncMock(return_value={})
+    app.state.graph = fake_graph
     return TestClient(app)
 
 
