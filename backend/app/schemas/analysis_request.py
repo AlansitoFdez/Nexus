@@ -62,6 +62,7 @@ class AnalysisRequestResponse(BaseModel):
     pr_number: int | None
     status: str
     final_report: str | None
+    pr_comment_url: str | None
     findings: list[FindingResponse]
     created_at: datetime
     updated_at: datetime | None
@@ -79,3 +80,4 @@ class AnalysisRequestUpdate(BaseModel):
 
     status: Literal["pending", "running", "completed", "completed_with_errors", "failed"] | None = None
     final_report: str | None = None
+    pr_comment_url: str | None = None

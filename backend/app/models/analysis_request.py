@@ -45,6 +45,7 @@ class AnalysisRequest(Base):
     post_to_pr = Column(Boolean, server_default=sa.text("false"), nullable=False)
     final_report = Column(Text, nullable=True)
     pr_number = Column(Integer, nullable=True)
+    pr_comment_url = Column(String(500), nullable=True)
 
     findings = relationship("Finding", back_populates="analysis_request")
     approvals = relationship("Approval", back_populates="analysis_request")
