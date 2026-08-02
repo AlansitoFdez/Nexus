@@ -63,7 +63,7 @@ def test_decide_approval_returns_200_and_schedules_graph_resume(client):
 
     assert response.status_code == 200
     assert response.json()["status"] == "pending"
-    app.state.graph.ainvoke.assert_awaited()
+    app.state.graph.astream.assert_called()
 
 
 def test_decide_approval_returns_409_when_already_decided(client):

@@ -1,7 +1,7 @@
 """Shared fixtures for API endpoint tests, using an isolated test database."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -35,6 +35,18 @@ def setup_and_teardown_db():
     Base.metadata.drop_all(bind=engine)
 
 
+async def _empty_astream(*args, **kwargs):
+    """Stands in for the real graph's astream(): an async generator that
+    finishes immediately without yielding any chunks. The `return`
+    before the unreachable `yield` is what makes this an async generator
+    function at all — needed since runner.py does `async for chunk in
+    graph.astream(...)`, which requires something async-iterable, not
+    just an awaitable.
+    """
+    return
+    yield
+
+
 @pytest.fixture
 def client():
     """Provides a TestClient bound to the FastAPI app.
@@ -49,9 +61,13 @@ def client():
     rule that no test talks to the real network. Graph-execution
     behavior itself is test_graph.py's job, with its own explicitly
     mocked LLM/MCP clients.
+
+    astream is wrapped in a MagicMock with side_effect (not assigned
+    directly) so tests can still assert it was called, the same way
+    they'd assert on any other mock.
     """
     fake_graph = MagicMock()
-    fake_graph.ainvoke = AsyncMock(return_value={})
+    fake_graph.astream = MagicMock(side_effect=_empty_astream)
     app.state.graph = fake_graph
     return TestClient(app)
 
