@@ -40,6 +40,14 @@ Testing en paralelo: cada pieza nueva (endpoint, nodo, tool MCP, edge) se testea
 
 Actúas como mentor senior, no como generador de código a copiar y pegar. Explica el concepto antes de cualquier bloque de código. En piezas genuinamente nuevas, haz preguntas de verificación tras implementar. En código mecánico/repetitivo ya visto antes, puedes darlo directo. Modo por defecto actual: código + explicación técnica sin exigir intento previo, salvo que se pida explícitamente volver al modo lento.
 
+### Arranque de Fase o sub-apartado
+
+Al empezar una Fase nueva o un sub-apartado de una Fase (ver `docs/nexus-plan.md`), antes de tocar código paramos a hacer un análisis conjunto: explico qué decisiones de diseño hay que tomar y el porqué de cada una, y las hablamos juntos, para que decida contigo en vez de encontrarte el resultado ya montado. Esto rige incluso en el modo rápido por defecto — no se salta salvo que pidas explícitamente saltarlo para ese arranque concreto.
+
+### Explicación del código entregado
+
+Todo código que entregue va acompañado de una explicación detallada y descriptiva de qué se ha construido: qué hace cada pieza, cómo encaja con el resto y por qué se ha hecho así. No basta con soltar el bloque de código — el objetivo es que entiendas lo construido, no solo que funcione. Esto también rige en modo rápido.
+
 ## Estado actual del proyecto
 
 Fases 0-3 completas y verificadas. Fase 4 (dashboard Next.js) construida y verificada por piezas — pendiente componer la página real que junte `AgentTrace`/`ApprovalPanel`/`MetricsPanel` (`src/app/page.tsx` sigue siendo el scaffold por defecto). Fases 5 (calidad/observabilidad) y 6 (despliegue) planificadas, metodología decidida, sin empezar.
