@@ -100,6 +100,16 @@ async def synthesizer_node(state: CodeReviewState) -> dict:
             "error": f"AnalysisRequest {state['analysis_request_id']} not found during synthesizer_node",
             "node_history": ["synthesizer"],
         }
+    except Exception as exc:
+        # Same reasoning as entry_node's widened except: the "not found"
+        # case isn't the only way this write can fail, and an uncaught
+        # exception here would leave the AnalysisRequest at "running"
+        # forever with no route to failure_node.
+        return {
+            "final_report": final_report,
+            "error": f"Failed to persist AnalysisRequest {state['analysis_request_id']} during synthesizer_node: {exc}",
+            "node_history": ["synthesizer"],
+        }
     finally:
         db.close()
 

@@ -50,6 +50,16 @@ async def entry_node(state: CodeReviewState) -> dict:
             "error": f"AnalysisRequest {state['analysis_request_id']} not found during entry_node",
             "node_history": ["entry"],
         }
+    except Exception as exc:
+        # Anything else the database can throw here (connection drop,
+        # a truncated column, ...) must still land in state["error"] —
+        # AnalysisRequestNotFoundError alone doesn't cover it, and an
+        # uncaught exception would propagate out of this node with
+        # nothing left to mark the AnalysisRequest as failed.
+        return {
+            "error": f"Failed to update AnalysisRequest {state['analysis_request_id']} status during entry_node: {exc}",
+            "node_history": ["entry"],
+        }
     finally:
         db.close()
 

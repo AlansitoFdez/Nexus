@@ -44,3 +44,25 @@ async def test_failure_node_does_not_raise_when_analysis_request_missing(db_sess
         result = await failure_node(state)
 
     assert result == {"node_history": ["failure"]}
+
+
+@pytest.mark.asyncio
+async def test_failure_node_does_not_raise_on_unexpected_database_failure(db_session):
+    """failure_node is already the graph's own terminal error handler —
+    its only edge goes straight to END, so if its own write fails for a
+    reason other than "not found", there's no further node to hand off
+    to. Must be logged, never raised."""
+    from unittest.mock import patch
+
+    repo = AnalysisRequestRepository(db_session)
+    request = repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    ))
+
+    state = {"analysis_request_id": request.id}
+
+    with patch("app.agents.nodes.failure_node.SessionLocal", TestSessionLocal), \
+         patch.object(AnalysisRequestRepository, "update", side_effect=RuntimeError("connection lost")):
+        result = await failure_node(state)
+
+    assert result == {"node_history": ["failure"]}

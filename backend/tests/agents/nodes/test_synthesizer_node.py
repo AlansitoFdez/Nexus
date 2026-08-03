@@ -136,3 +136,26 @@ async def test_synthesizer_returns_error_when_analysis_request_not_found(db_sess
 
     assert "error" in result
     assert "final_report" in result
+
+
+@pytest.mark.asyncio
+async def test_synthesizer_returns_error_on_unexpected_database_failure(db_session):
+    """Same widened except as entry_node — not every failure persisting
+    the final report is AnalysisRequestNotFoundError."""
+    repo = AnalysisRequestRepository(db_session)
+    request = repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa todo"
+    ))
+
+    state = {"analysis_request_id": request.id, "findings": [], "failed_specialists": []}
+
+    mock_llm = MagicMock()
+    mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="Resumen."))
+
+    with patch("app.agents.nodes.synthesizer_node.ChatGroq", return_value=mock_llm), \
+         patch("app.agents.nodes.synthesizer_node.SessionLocal", TestSessionLocal), \
+         patch.object(AnalysisRequestRepository, "update", side_effect=RuntimeError("connection lost")):
+        result = await synthesizer_node(state)
+
+    assert "connection lost" in result["error"]
+    assert "final_report" in result

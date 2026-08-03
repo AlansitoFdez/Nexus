@@ -117,3 +117,30 @@ async def test_entry_node_returns_error_when_analysis_request_not_found(db_sessi
 
     assert "error" in result
     assert result["node_history"] == ["entry"]
+
+
+@pytest.mark.asyncio
+async def test_entry_node_returns_error_on_unexpected_database_failure(db_session):
+    """AnalysisRequestNotFoundError isn't the only way this status update
+    can fail — a real database outage or a truncated column must still
+    land in state["error"], not propagate uncaught out of the node and
+    leave the AnalysisRequest stuck at "running" forever."""
+    repo = AnalysisRequestRepository(db_session)
+    request = repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    ))
+
+    state = {
+        "analysis_request_id": request.id,
+        "source_type": "pasted_code",
+        "repo_url": None,
+        "pasted_code": "def foo(): pass",
+        "review_request": "revisa seguridad",
+    }
+
+    with patch("app.agents.nodes.entry_node.SessionLocal", TestSessionLocal), \
+         patch.object(AnalysisRequestRepository, "update", side_effect=RuntimeError("connection lost")):
+        result = await entry_node(state)
+
+    assert "connection lost" in result["error"]
+    assert result["node_history"] == ["entry"]

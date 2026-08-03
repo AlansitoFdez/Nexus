@@ -12,7 +12,16 @@ Specialist-level failures never reach this node: those are captured
 per-specialist in failed_specialists (Fase 2.5) and still let the
 graph continue to synthesizer_node, which reports them honestly
 without treating the whole run as a failure.
+
+This node is already the graph's own terminal error handler — nothing
+routes on its output (its only edge goes straight to END) — so if its
+own write fails for a reason other than "not found", there's no
+further node to hand off to. Logged rather than raised: runner.py's
+own last-resort handler is the outer safety net for exactly this kind
+of unexpected failure.
 """
+
+import logging
 
 from app.agents.state import CodeReviewState
 from app.database import SessionLocal
@@ -22,6 +31,8 @@ from app.repositories.analysis_request_repository import (
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 
+logger = logging.getLogger("nexus.failure_node")
+
 
 async def failure_node(state: CodeReviewState) -> dict:
     db = SessionLocal()
@@ -30,6 +41,11 @@ async def failure_node(state: CodeReviewState) -> dict:
         repo.update(state["analysis_request_id"], AnalysisRequestUpdate(status="failed"))
     except AnalysisRequestNotFoundError:
         pass
+    except Exception:
+        logger.exception(
+            "Failed to persist status=\"failed\" for AnalysisRequest %s in failure_node",
+            state["analysis_request_id"],
+        )
     finally:
         db.close()
 
