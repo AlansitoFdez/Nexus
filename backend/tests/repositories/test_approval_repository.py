@@ -76,3 +76,42 @@ def test_get_by_analysis_request_id_returns_empty_list_when_none_exist(db_sessio
     result = approval_repo.get_by_analysis_request_id(request.id)
 
     assert result == []
+
+
+def test_claim_pending_succeeds_for_a_pending_unclaimed_approval(db_session):
+    analysis_repo = AnalysisRequestRepository(db_session)
+    approval_repo = ApprovalRepository(db_session, analysis_repo)
+    request = analysis_repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    ))
+    approval = approval_repo.create(ApprovalCreate(analysis_request_id=request.id, proposed_action="publicar en el PR"))
+
+    assert approval_repo.claim_pending(approval.id) is True
+
+    db_session.expire_all()
+    claimed = approval_repo.get_by_id(approval.id)
+    assert claimed.claimed_at is not None
+    # status stays untouched — writing the actual decision is still
+    # exclusively human_approval_node's job, not this call's.
+    assert claimed.status == "pending"
+
+
+def test_claim_pending_fails_on_second_call_for_the_same_approval(db_session):
+    """The exact race 2.4 closes: two callers racing to claim the same
+    still-pending approval — only the first one wins."""
+    analysis_repo = AnalysisRequestRepository(db_session)
+    approval_repo = ApprovalRepository(db_session, analysis_repo)
+    request = analysis_repo.create(AnalysisRequestCreate(
+        source_type="pasted_code", pasted_code="def foo(): pass", review_request="revisa seguridad"
+    ))
+    approval = approval_repo.create(ApprovalCreate(analysis_request_id=request.id, proposed_action="publicar en el PR"))
+
+    assert approval_repo.claim_pending(approval.id) is True
+    assert approval_repo.claim_pending(approval.id) is False
+
+
+def test_claim_pending_fails_for_a_nonexistent_approval(db_session):
+    analysis_repo = AnalysisRequestRepository(db_session)
+    approval_repo = ApprovalRepository(db_session, analysis_repo)
+
+    assert approval_repo.claim_pending(999) is False

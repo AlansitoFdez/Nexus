@@ -37,6 +37,12 @@ interface ApprovalContext {
 type FallbackState =
   | { status: "loading" }
   | { status: "none" }
+  // A decision is already in flight for this analysis_request_id (someone
+  // already POSTed to /decision — claimed_at is set, but status is still
+  // "pending" until human_approval_node actually resumes) — distinct from
+  // "none" so this reload doesn't show the approve/reject buttons again
+  // for a decision that's already on its way.
+  | { status: "claimed" }
   | { status: "found"; context: ApprovalContext };
 
 function isApprovalRequired(
@@ -62,9 +68,14 @@ export function ApprovalPanel({ analysisRequestId, onResolved }: ApprovalPanelPr
         // exactly one Approval per graph run, and each AnalysisRequest
         // maps to exactly one run.
         const approvals = await listApprovals({ analysisRequestId });
-        const pending = approvals.find((approval) => approval.status === "pending");
+        const pending = approvals.find(
+          (approval) => approval.status === "pending" && approval.claimed_at === null,
+        );
         if (!pending) {
-          if (!cancelled) setFallback({ status: "none" });
+          const alreadyClaimed = approvals.some(
+            (approval) => approval.status === "pending" && approval.claimed_at !== null,
+          );
+          if (!cancelled) setFallback(alreadyClaimed ? { status: "claimed" } : { status: "none" });
           return;
         }
 
@@ -126,6 +137,9 @@ export function ApprovalPanel({ analysisRequestId, onResolved }: ApprovalPanelPr
   }
 
   if (!context) {
+    if (fallback.status === "claimed") {
+      return <p className="text-sm text-gray-500">Tu decisión se está procesando…</p>;
+    }
     return <p className="text-sm text-gray-500">Ninguna aprobación pendiente por ahora.</p>;
   }
 

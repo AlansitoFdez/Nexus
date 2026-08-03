@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 
+from sqlalchemy import func, update
 from sqlalchemy.orm import Session
 
 from app.models.approval import Approval
@@ -64,6 +65,37 @@ class ApprovalRepository:
             .filter(Approval.analysis_request_id == analysis_request_id)
             .all()
         )
+
+    def claim_pending(self, approval_id: int) -> bool:
+        """Atomically marks a pending approval as claimed, so a second
+        concurrent request against the same approval_id can't also pass
+        the "is this still decidable" check.
+
+        A plain read-then-check (approval.status == "pending") leaves a
+        real gap: the actual decision status is only written later, by
+        human_approval_node, once the graph wakes up and resumes — not
+        by this call — so two requests could both read "pending" before
+        either had written anything. This single UPDATE ... WHERE
+        status='pending' AND claimed_at IS NULL closes that gap: only
+        one concurrent caller can be the one whose WHERE clause still
+        matches by the time its UPDATE actually runs.
+
+        Deliberately doesn't touch status itself — claimed_at is a
+        narrower concept ("a decision is already in flight"), not the
+        decision's outcome, which stays human_approval_node's exclusive
+        responsibility.
+
+        Returns:
+            True if this call is the one that won the claim, False if
+            the approval was already claimed or already decided.
+        """
+        result = self.db.execute(
+            update(Approval)
+            .where(Approval.id == approval_id, Approval.status == "pending", Approval.claimed_at.is_(None))
+            .values(claimed_at=func.now())
+        )
+        self.db.commit()
+        return result.rowcount > 0
 
     def update(self, approval_id: int, data: ApprovalUpdate) -> Approval:
         """Applies a decision (approved/rejected) to a pending approval.

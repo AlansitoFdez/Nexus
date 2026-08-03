@@ -99,6 +99,29 @@ def test_decide_approval_returns_200_and_schedules_graph_resume(client):
     app.state.graph.astream.assert_called()
 
 
+def test_decide_approval_returns_409_on_second_call_before_any_status_change(client):
+    """Regression test for the actual race in 2.4: the mocked graph's
+    astream() never really touches this Approval's status (that's
+    human_approval_node's job on a real resume) — so under the old
+    status-only guard, both decisions here would have read "pending"
+    and both would have gotten a 200. claim_pending()'s atomic UPDATE is
+    what makes the second one fail, without needing status to have
+    changed at all."""
+    analysis_response = client.post("/analysis-requests/", json={
+        "source_type": "pasted_code", "pasted_code": "def foo(): pass", "review_request": "revisa seguridad"
+    })
+    approval_response = client.post("/approvals/", json={
+        "analysis_request_id": analysis_response.json()["id"], "proposed_action": "publicar comentario en el PR"
+    })
+    approval_id = approval_response.json()["id"]
+
+    first = client.post(f"/approvals/{approval_id}/decision", json={"decision": "approved"})
+    second = client.post(f"/approvals/{approval_id}/decision", json={"decision": "approved"})
+
+    assert first.status_code == 200
+    assert second.status_code == 409
+
+
 def test_decide_approval_returns_409_when_already_decided(client):
     analysis_response = client.post("/analysis-requests/", json={
         "source_type": "pasted_code", "pasted_code": "def foo(): pass", "review_request": "revisa seguridad"

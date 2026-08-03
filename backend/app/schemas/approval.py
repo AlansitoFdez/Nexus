@@ -13,12 +13,21 @@ class ApprovalCreate(BaseModel):
 
 
 class ApprovalResponse(BaseModel):
-    """Full representation of an approval returned by the API."""
+    """Full representation of an approval returned by the API.
+
+    claimed_at is set by POST /approvals/{id}/decision the moment a
+    decision is accepted, before status itself changes — a client
+    reloading the dashboard needs to tell "genuinely still pending"
+    (claimed_at is None) apart from "a decision is already in flight"
+    (claimed_at is set, status still "pending") to avoid re-showing the
+    approve/reject buttons for a decision that's already on its way.
+    """
 
     id: int
     analysis_request_id: int
     proposed_action: str
     status: str
+    claimed_at: datetime | None
     decided_at: datetime | None
     created_at: datetime
 

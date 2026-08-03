@@ -88,16 +88,17 @@ export type AnalysisRequestCreate =
       | { post_to_pr: true; pr_number: number }
     ));
 
-export interface AnalysisRequestUpdatePayload {
-  status?: AnalysisStatus;
-  final_report?: string | null;
-}
-
 export interface Approval {
   id: number;
   analysis_request_id: number;
   proposed_action: string;
   status: ApprovalStatus;
+  // Set by POST /approvals/{id}/decision the moment a decision is
+  // accepted, before status itself changes (human_approval_node is
+  // still what flips status on resume). A pending approval with
+  // claimed_at already set means a decision is in flight — not that
+  // it's still waiting for one.
+  claimed_at: string | null;
   decided_at: string | null;
   created_at: string;
 }

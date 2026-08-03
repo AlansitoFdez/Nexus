@@ -74,11 +74,14 @@ def decide_approval(
     """Submits a human decision for a pending approval and resumes the
     paused graph in the background.
 
-    Rejects deciding an approval that isn't "pending" anymore (409) —
-    resuming an already-resumed thread has no interrupt() left waiting
-    for it, so silently accepting a second decision would just fail
-    inside the graph instead of at this boundary, where it's cheap and
-    clear to catch.
+    Rejects deciding an approval that's already claimed or already
+    decided (409). The claim itself (ApprovalRepository.claim_pending)
+    is what makes this safe against two concurrent decisions on the
+    same approval_id: reading approval.status here and then acting on
+    it are two separate moments — resuming an already-resumed thread
+    has no interrupt() left waiting for it, so without an atomic claim,
+    both requests could read "pending" before either had written
+    anything, and both would schedule a resume.
     """
     repo = ApprovalRepository(db, AnalysisRequestRepository(db))
     approval = repo.get_by_id(approval_id)
@@ -86,10 +89,10 @@ def decide_approval(
     if approval is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
 
-    if approval.status != "pending":
+    if not repo.claim_pending(approval_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Approval {approval_id} was already decided ({approval.status})",
+            detail=f"Approval {approval_id} was already decided or is already being decided",
         )
 
     background_tasks.add_task(
