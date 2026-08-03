@@ -17,6 +17,11 @@ def test_router_decision_rejects_invalid_agent_name():
         RouterDecision(agents_to_run=["nonexistent_agent"], reasoning="motivo")
 
 
+def test_router_decision_rejects_empty_agents_list():
+    with pytest.raises(ValidationError):
+        RouterDecision(agents_to_run=[], reasoning="motivo")
+
+
 def test_specialist_finding_accepts_valid_severity():
     finding = SpecialistFinding(severity="high", description="inyección SQL")
     assert finding.severity == "high"

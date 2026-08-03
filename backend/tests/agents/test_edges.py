@@ -44,7 +44,12 @@ def test_route_after_router_fans_out_to_all_four_agents():
     }
 
 
-def test_route_after_router_returns_empty_list_when_no_agents_selected():
+def test_route_after_router_routes_to_failure_node_when_no_agents_selected():
+    """RouterDecision enforces min_length=1 at the schema layer, so this
+    should be unreachable via the real LLM path — but a Send() list of
+    zero destinations would otherwise end the graph silently, leaving
+    the AnalysisRequest stuck at status="running" forever. Checked here
+    too as defense in depth."""
     state = {
         "agents_to_run": [],
         "code_content": "def foo(): pass",
@@ -55,7 +60,7 @@ def test_route_after_router_returns_empty_list_when_no_agents_selected():
 
     result = route_after_router(state)
 
-    assert result == []
+    assert result == "failure_node"
 
 
 def test_route_after_router_routes_to_failure_node_when_router_failed():

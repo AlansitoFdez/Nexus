@@ -39,8 +39,20 @@ def route_after_entry(state: CodeReviewState) -> str:
 
 def route_after_router(state: CodeReviewState) -> list[Send] | str:
     """Fans out to every specialist the router selected, or routes to
-    failure_node if the router itself failed."""
+    failure_node if the router itself failed — or if it selected no
+    one at all.
+
+    RouterDecision.agents_to_run already requires at least one entry,
+    so this should be unreachable in practice — but a Send() list of
+    zero destinations would silently end the graph with the
+    AnalysisRequest stuck at status="running" forever, so this is
+    checked here too, the same "guarantee it where it can't be
+    skipped" principle already applied at the schema/database layers.
+    """
     if state.get("error"):
+        return "failure_node"
+
+    if not state.get("agents_to_run"):
         return "failure_node"
 
     return [

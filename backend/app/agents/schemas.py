@@ -7,7 +7,7 @@ Fase 2.3 architecture discussion for the reasoning.
 """
 
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RouterDecision(BaseModel):
@@ -16,9 +16,17 @@ class RouterDecision(BaseModel):
     reasoning is kept as a short audit trail — it costs nothing extra
     from the LLM call and makes a wrong decision debuggable later
     ("why did it skip performance here?") without re-running anything.
+
+    agents_to_run requires at least one entry: the prompt already tells
+    the LLM to include all four for a generic request, but that's a
+    text instruction, not a guarantee — the same reasoning that put
+    ck_analysis_requests_exactly_one_source at the database level
+    applies here too. An empty list would otherwise fan out to zero
+    Send()s in route_after_router, ending the graph with the
+    AnalysisRequest stuck at status="running" forever.
     """
 
-    agents_to_run: list[Literal["security", "performance", "design_patterns", "best_practices"]]
+    agents_to_run: list[Literal["security", "performance", "design_patterns", "best_practices"]] = Field(min_length=1)
     reasoning: str
 
 
