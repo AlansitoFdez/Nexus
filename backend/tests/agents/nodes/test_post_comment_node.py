@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.agents.nodes.post_comment_node import post_comment_node
+from app.config import settings
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
 
@@ -57,11 +58,14 @@ async def test_posts_comment_persists_url_and_notifies_on_success(db_session):
     mock_result.data = "https://github.com/alan/nexus/pull/42#issuecomment-1"
     mock_client.call_tool = AsyncMock(return_value=mock_result)
 
-    with patch("app.agents.nodes.post_comment_node.Client", return_value=mock_client), \
+    with patch("app.agents.nodes.post_comment_node.Client", return_value=mock_client) as mock_client_cls, \
          patch("app.agents.nodes.post_comment_node.SessionLocal", TestSessionLocal), \
          patch("app.agents.nodes.post_comment_node.manager.send_to_analysis_request", AsyncMock()) as mock_notify:
         result = await post_comment_node(_state(request.id))
 
+    # Regression: same MCP_API_KEY requirement as entry_node — without
+    # it, this node can never actually post the approved comment.
+    mock_client_cls.assert_called_once_with(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY)
     mock_client.call_tool.assert_awaited_once_with(
         "post_pr_comment",
         {

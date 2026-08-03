@@ -2,9 +2,9 @@
 
 Deterministic, no LLM involved. Resolves `code_content` from whichever
 of the two source paths is active — pasted code is used as-is, a
-GitHub repo is read through the `read_repository_files` MCP tool
-(pending, Fase 3.1) — updates the request's status to "running", and
-notifies the dashboard that processing has begun.
+GitHub repo is read through the `read_repository_files` MCP tool —
+updates the request's status to "running", and notifies the dashboard
+that processing has begun.
 
 code_content itself is never persisted to the analysis_requests row:
 unlike a ticket's short cleaned_text, this can be an entire repo's
@@ -30,7 +30,7 @@ async def entry_node(state: CodeReviewState) -> dict:
         code_content = state["pasted_code"]
     else:
         try:
-            async with Client(settings.MCP_SERVER_URL) as client:
+            async with Client(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY) as client:
                 result = await client.call_tool(
                     "read_repository_files", {"repo_url": state["repo_url"]}
                 )

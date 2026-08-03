@@ -50,7 +50,7 @@ async def post_comment_node(state: CodeReviewState) -> dict:
         return {"node_history": ["post_comment"]}
 
     try:
-        async with Client(settings.MCP_SERVER_URL) as client:
+        async with Client(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY) as client:
             result = await client.call_tool(
                 "post_pr_comment",
                 {

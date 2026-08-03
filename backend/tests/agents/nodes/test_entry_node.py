@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.agents.nodes.entry_node import entry_node
+from app.config import settings
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
 
@@ -59,11 +60,16 @@ async def test_entry_node_reads_github_repo_via_mcp_tool(db_session):
     mock_result.data = {"content": "print('hola')"}
     mock_client.call_tool = AsyncMock(return_value=mock_result)
 
-    with patch("app.agents.nodes.entry_node.Client", return_value=mock_client), \
+    with patch("app.agents.nodes.entry_node.Client", return_value=mock_client) as mock_client_cls, \
          patch("app.agents.nodes.entry_node.SessionLocal", TestSessionLocal):
         result = await entry_node(state)
 
     assert result["code_content"] == {"content": "print('hola')"}
+    # Regression: MCP_API_KEY must actually reach the client, or every
+    # github_repo analysis fails with 401 the moment it hits a real
+    # StaticTokenVerifier-protected server, not just the in-memory
+    # test double this mock stands in for.
+    mock_client_cls.assert_called_once_with(settings.MCP_SERVER_URL, auth=settings.MCP_API_KEY)
     mock_client.call_tool.assert_awaited_once_with(
         "read_repository_files", {"repo_url": "https://github.com/alan/nexus"}
     )
