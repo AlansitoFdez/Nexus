@@ -15,6 +15,17 @@ Unlike the ticket domain's version, this node also persists a real
 Approval row (analysis_request_id-linked) so the pending decision is
 queryable via GET /approvals/{id} while the graph sits paused —
 not just visible inside the ephemeral interrupt() payload.
+
+Approval lookup, not blind creation, before interrupt(): interrupt()
+doesn't pause mid-function the way it reads — when the graph resumes,
+LangGraph re-runs this node's whole function from the top, and only
+the interrupt() call itself "remembers" the resume value instead of
+pausing again. Anything before that call genuinely runs twice. Blindly
+calling repo.create() there created a second Approval row on every
+resume, leaving the first stuck at "pending" forever with nothing left
+to update it. Reusing an existing pending row instead makes this node
+safe to re-execute — exactly once gets created, no matter how many
+times LangGraph replays the function around the interrupt.
 """
 
 from langgraph.types import interrupt
@@ -44,7 +55,11 @@ async def human_approval_node(state: CodeReviewState) -> dict:
     db = SessionLocal()
     try:
         repo = ApprovalRepository(db, AnalysisRequestRepository(db))
-        approval = repo.create(ApprovalCreate(
+        pending = next(
+            (a for a in repo.get_by_analysis_request_id(state["analysis_request_id"]) if a.status == "pending"),
+            None,
+        )
+        approval = pending or repo.create(ApprovalCreate(
             analysis_request_id=state["analysis_request_id"],
             proposed_action=PROPOSED_ACTION,
         ))

@@ -63,6 +63,39 @@ async def test_human_approval_node_persists_approved_decision(db_session):
 
 
 @pytest.mark.asyncio
+async def test_human_approval_node_reuses_pending_approval_on_reexecution(db_session):
+    """interrupt() makes LangGraph re-run this node's entire function
+    from the top on resume — only the interrupt() call itself "remembers"
+    it was already answered. Calling the node twice for the same
+    analysis_request_id models exactly that replay. Without the
+    idempotent lookup, this created a second Approval row on the second
+    call, leaving the first stuck at "pending" forever."""
+    analysis_repo = AnalysisRequestRepository(db_session)
+    request = analysis_repo.create(AnalysisRequestCreate(
+        source_type="github_repo",
+        repo_url="https://github.com/alan/nexus",
+        review_request="revisa seguridad",
+        post_to_pr=True,
+        pr_number=42,
+    ))
+
+    state = {"analysis_request_id": request.id, "post_to_pr": True, "final_report": "informe completo"}
+
+    with patch("app.agents.nodes.human_approval_node.interrupt", return_value="approved"), \
+         patch("app.agents.nodes.human_approval_node.SessionLocal", TestSessionLocal):
+        await human_approval_node(state)
+        result = await human_approval_node(state)
+
+    assert result == {"node_history": ["human_approval"]}
+
+    approval_repo = ApprovalRepository(db_session, analysis_repo)
+    db_session.expire_all()
+    approvals = approval_repo.get_all()
+    assert len(approvals) == 1
+    assert approvals[0].status == "approved"
+
+
+@pytest.mark.asyncio
 async def test_human_approval_node_rejects_and_cancels_post_to_pr(db_session):
     analysis_repo = AnalysisRequestRepository(db_session)
     request = analysis_repo.create(AnalysisRequestCreate(
