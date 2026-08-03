@@ -50,7 +50,13 @@ function CountList({ counts, labels }: { counts: Partial<Record<string, number>>
   );
 }
 
-export function MetricsPanel() {
+interface MetricsPanelProps {
+  // Bump this (e.g. after an approval decision resumes the graph) to force
+  // a refetch — a plain snapshot otherwise never updates itself.
+  refreshKey?: number;
+}
+
+export function MetricsPanel({ refreshKey }: MetricsPanelProps = {}) {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +72,7 @@ export function MetricsPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;

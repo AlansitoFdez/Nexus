@@ -25,6 +25,7 @@ import type { ApprovalDecisionValue, WSEvent } from "@/lib/api/types";
 
 interface ApprovalPanelProps {
   analysisRequestId: number;
+  onResolved?: () => void;
 }
 
 interface ApprovalContext {
@@ -44,7 +45,7 @@ function isApprovalRequired(
   return event.type === "approval_required";
 }
 
-export function ApprovalPanel({ analysisRequestId }: ApprovalPanelProps) {
+export function ApprovalPanel({ analysisRequestId, onResolved }: ApprovalPanelProps) {
   const { events } = useAnalysisRequestSocket(analysisRequestId);
   const [fallback, setFallback] = useState<FallbackState>({ status: "loading" });
   const [decisionSubmitted, setDecisionSubmitted] = useState(false);
@@ -110,6 +111,15 @@ export function ApprovalPanel({ analysisRequestId }: ApprovalPanelProps) {
       event.type === "node_finished" &&
       (event.node === "human_approval" || event.node === "post_comment"),
   );
+
+  // Fires once, right when the graph actually resumes past the gate — the
+  // metrics snapshot (pr_comments_posted in particular) only changes once
+  // post_comment_node runs, so this is the signal MetricsPanel needs to
+  // know it's worth a refetch.
+  useEffect(() => {
+    if (resumed) onResolved?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumed]);
 
   if (!liveEvent && fallback.status === "loading") {
     return <p className="text-sm text-gray-500">Comprobando si hay una aprobación pendiente…</p>;
