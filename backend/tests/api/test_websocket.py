@@ -1,7 +1,11 @@
 """Tests for the analysis request WebSocket endpoint."""
 
+from unittest.mock import AsyncMock
+
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.api.websocket import ConnectionManager
 
 client = TestClient(app)
 
@@ -39,3 +43,23 @@ def test_connecting_second_client_does_not_leak_into_first_client():
 
             asyncio.run(manager.send_to_analysis_request(5, "evento de prueba"))
             assert ws_a.receive_text() == "evento de prueba"
+
+
+@pytest.mark.asyncio
+async def test_send_to_analysis_request_disconnects_dead_sockets_without_raising():
+    """A socket that already closed its tab, but whose WebSocketDisconnect
+    the server hasn't processed yet, raises on send_text() — this must
+    not propagate. entry_node/post_comment_node await this call with no
+    try/except of their own, so an unhandled exception here would kill
+    the whole graph run over a connection that has nothing to do with
+    the analysis being processed."""
+    manager = ConnectionManager()
+    healthy = AsyncMock()
+    dead = AsyncMock()
+    dead.send_text = AsyncMock(side_effect=RuntimeError("connection closed"))
+    manager.active_connections[1] = [healthy, dead]
+
+    await manager.send_to_analysis_request(1, "hola")
+
+    healthy.send_text.assert_awaited_once_with("hola")
+    assert manager.active_connections[1] == [healthy]

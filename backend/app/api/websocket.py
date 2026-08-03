@@ -38,9 +38,28 @@ class ConnectionManager:
             self.active_connections.pop(analysis_request_id, None)
 
     async def send_to_analysis_request(self, analysis_request_id: int, message: str):
-        """Sends a text message to every connection watching this request."""
-        for connection in self.active_connections.get(analysis_request_id, []):
-            await connection.send_text(message)
+        """Sends a text message to every connection watching this request.
+
+        Iterates a snapshot of the connection list, not the live one:
+        disconnect() can run concurrently — triggered by a *different*
+        socket's own receive_text() raising WebSocketDisconnect while
+        this loop is suspended on an await — and mutating the same list
+        object mid-iteration raises RuntimeError.
+
+        Each send is also isolated in its own try/except: a client that
+        already closed its tab, but whose WebSocketDisconnect the server
+        hasn't processed yet, would otherwise raise here and propagate
+        all the way up into whichever graph node awaited this call
+        (entry_node, post_comment_node) — killing that node, and the
+        whole analysis run, over a dead connection that has nothing to
+        do with the analysis itself.
+        """
+        connections = list(self.active_connections.get(analysis_request_id, []))
+        for connection in connections:
+            try:
+                await connection.send_text(message)
+            except Exception:
+                self.disconnect(analysis_request_id, connection)
 
 
 manager = ConnectionManager()
