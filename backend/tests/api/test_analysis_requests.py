@@ -30,7 +30,11 @@ def test_get_analysis_request_returns_404_when_not_found(client):
     assert response.status_code == 404
 
 
-def test_patch_analysis_request_updates_status(client):
+def test_no_public_patch_endpoint_for_analysis_requests(client):
+    """AnalysisRequestUpdate is for graph nodes to use internally — no
+    client-facing PATCH is exposed for it (removed in the 2.5 review:
+    nothing in the frontend ever called it, and it let any client
+    overwrite status/final_report/pr_comment_url mid-run)."""
     create_response = client.post("/analysis-requests/", json={
         "source_type": "pasted_code",
         "pasted_code": "def foo(): pass",
@@ -40,10 +44,4 @@ def test_patch_analysis_request_updates_status(client):
 
     response = client.patch(f"/analysis-requests/{request_id}", json={"status": "running"})
 
-    assert response.status_code == 200
-    assert response.json()["status"] == "running"
-
-
-def test_patch_analysis_request_returns_404_when_not_found(client):
-    response = client.patch("/analysis-requests/999", json={"status": "running"})
-    assert response.status_code == 404
+    assert response.status_code == 405

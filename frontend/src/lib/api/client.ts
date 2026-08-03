@@ -10,7 +10,6 @@
 import type {
   AnalysisRequest,
   AnalysisRequestCreate,
-  AnalysisRequestUpdatePayload,
   Approval,
   ApprovalCreatePayload,
   ApprovalDecisionPayload,
@@ -71,16 +70,6 @@ export function getAnalysisRequest(id: number): Promise<AnalysisRequest> {
 
 export function listAnalysisRequests(): Promise<AnalysisRequest[]> {
   return request<AnalysisRequest[]>("/analysis-requests/");
-}
-
-export function updateAnalysisRequest(
-  id: number,
-  data: AnalysisRequestUpdatePayload,
-): Promise<AnalysisRequest> {
-  return request<AnalysisRequest>(`/analysis-requests/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
 }
 
 // --- Approvals ---------------------------------------------------------

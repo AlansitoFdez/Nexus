@@ -1,15 +1,26 @@
-"""REST endpoints for analysis request creation and retrieval."""
+"""REST endpoints for analysis request creation and retrieval.
+
+No PATCH endpoint here on purpose: AnalysisRequestUpdate exists for
+graph nodes to use internally (entry_node/synthesizer_node/
+post_comment_node/failure_node writing status, final_report and
+pr_comment_url as the pipeline progresses) — it was never meant for
+direct client-side use, and nothing in the frontend actually calls it
+(confirmed by grep). Exposing it publicly let any client overwrite
+status mid-run or forge pr_comment_url (the only source of the
+"PRs comentados" metric) with a plain PATCH request, for zero real
+benefit today. Same YAGNI criterion already applied to list_open_prs
+(Fase 3.4) — reconstruct this the day there's a genuine client-safe use
+case (e.g. cancelling a pending analysis), scoped to only what a client
+should actually be allowed to touch.
+"""
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.agents.runner import run_analysis
 from app.database import get_db
-from app.repositories.analysis_request_repository import (
-    AnalysisRequestRepository,
-    AnalysisRequestNotFoundError,
-)
-from app.schemas.analysis_request import AnalysisRequestCreate, AnalysisRequestResponse, AnalysisRequestUpdate
+from app.repositories.analysis_request_repository import AnalysisRequestRepository
+from app.schemas.analysis_request import AnalysisRequestCreate, AnalysisRequestResponse
 
 router = APIRouter(prefix="/analysis-requests", tags=["analysis-requests"])
 
@@ -63,13 +74,3 @@ def list_analysis_requests(db: Session = Depends(get_db)):
     """Retrieves all analysis requests."""
     repo = AnalysisRequestRepository(db)
     return repo.get_all()
-
-
-@router.patch("/{analysis_request_id}", response_model=AnalysisRequestResponse)
-def update_analysis_request(analysis_request_id: int, data: AnalysisRequestUpdate, db: Session = Depends(get_db)):
-    """Partially updates an existing analysis request."""
-    repo = AnalysisRequestRepository(db)
-    try:
-        return repo.update(analysis_request_id, data)
-    except AnalysisRequestNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis request not found")
