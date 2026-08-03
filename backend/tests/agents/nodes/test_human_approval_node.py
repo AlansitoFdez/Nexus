@@ -64,12 +64,21 @@ async def test_human_approval_node_persists_approved_decision(db_session):
 
 @pytest.mark.asyncio
 async def test_human_approval_node_reuses_pending_approval_on_reexecution(db_session):
-    """interrupt() makes LangGraph re-run this node's entire function
-    from the top on resume — only the interrupt() call itself "remembers"
-    it was already answered. Calling the node twice for the same
-    analysis_request_id models exactly that replay. Without the
-    idempotent lookup, this created a second Approval row on the second
-    call, leaving the first stuck at "pending" forever."""
+    """interrupt() makes LangGraph re-run this node's entire function from
+    the top on resume — but crucially, the FIRST run never gets past the
+    interrupt() call at all, because that's what pausing means. This is
+    modeled faithfully by making the first call's interrupt() raise
+    (mirroring how real interrupt() pausing works via an exception
+    LangGraph's runtime catches) instead of returning a value — a naive
+    version of this test that just mocks interrupt() to return "approved"
+    on both calls would let the first call run all the way through its
+    own update(), leaving nothing "pending" for the second call to find,
+    masking the exact bug this guards against. Only the second call (the
+    resume) lets interrupt() return a decision and the function proceed.
+
+    Without the idempotent lookup, the second call still created a
+    second Approval row instead of reusing the first — caught by this
+    test against a real Postgres, not by inspection."""
     analysis_repo = AnalysisRequestRepository(db_session)
     request = analysis_repo.create(AnalysisRequestCreate(
         source_type="github_repo",
@@ -81,9 +90,19 @@ async def test_human_approval_node_reuses_pending_approval_on_reexecution(db_ses
 
     state = {"analysis_request_id": request.id, "post_to_pr": True, "final_report": "informe completo"}
 
-    with patch("app.agents.nodes.human_approval_node.interrupt", return_value="approved"), \
+    class _Paused(Exception):
+        """Stands in for LangGraph's real interrupt mechanism, which
+        pauses by raising internally — any exception serves the same
+        purpose here: stopping execution exactly at interrupt()."""
+
+    with patch("app.agents.nodes.human_approval_node.interrupt") as mock_interrupt, \
          patch("app.agents.nodes.human_approval_node.SessionLocal", TestSessionLocal):
-        await human_approval_node(state)
+        mock_interrupt.side_effect = _Paused()
+        with pytest.raises(_Paused):
+            await human_approval_node(state)
+
+        mock_interrupt.side_effect = None
+        mock_interrupt.return_value = "approved"
         result = await human_approval_node(state)
 
     assert result == {"node_history": ["human_approval"]}
