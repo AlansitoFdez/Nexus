@@ -3,8 +3,10 @@
 Both starting a fresh analysis and resuming one paused at
 human_approval_node ultimately do the same thing: drive `graph.astream()`
 to completion against a `thread_id` derived from the analysis_request_id,
-forwarding a translated event over the websocket for every chunk that
-matters (see ws_events.build_event). astream() is used instead of a
+forwarding every translated event over the websocket for each chunk
+that matters — a single chunk can translate to more than one event,
+since the Send() fan-out (Fase 2.4) can finish several specialists in
+the same superstep (see ws_events.build_event). astream() is used instead of a
 plain ainvoke() specifically so the dashboard's live agent trace
 (Fase 4) has something to render as the run progresses — iterating it
 to exhaustion has the same end-state effects ainvoke() would (every
@@ -25,8 +27,13 @@ from langgraph.types import Command
 
 from app.agents.ws_events import build_event
 from app.api.websocket import manager
+from app.database import SessionLocal
+from app.repositories.analysis_request_repository import AnalysisRequestRepository
+from app.schemas.analysis_request import AnalysisRequestUpdate
 
 logger = logging.getLogger(__name__)
+
+NON_TERMINAL_STATUSES = ("pending", "running")
 
 
 def _config_for(analysis_request_id: int) -> dict:
@@ -45,9 +52,52 @@ async def _stream_and_broadcast(graph, analysis_request_id: int, run_input) -> N
     watching this analysis_request_id."""
     config = _config_for(analysis_request_id)
     async for chunk in graph.astream(run_input, config=config, stream_mode="updates"):
-        event = build_event(chunk)
-        if event is not None:
+        for event in build_event(chunk):
             await manager.send_to_analysis_request(analysis_request_id, json.dumps(event))
+
+
+async def _mark_failed_as_last_resort(analysis_request_id: int) -> None:
+    """Safety net for exceptions that escape _stream_and_broadcast
+    entirely — a bug that isn't one of the domain errors individual
+    nodes already catch (entry_node/synthesizer_node/failure_node only
+    handle AnalysisRequestNotFoundError plus a few known failure modes).
+    Without this, that kind of unexpected error leaves the
+    AnalysisRequest stuck at "running" forever with nothing telling the
+    dashboard why.
+
+    Only overwrites the status when it's still "pending"/"running": if
+    the exception happened after synthesizer_node (or post_comment_node)
+    already reached a terminal, successful status, forcing "failed"
+    here would misreport a review that actually completed — the same
+    principle that already keeps failed_specialists and post_comment_node's
+    own error handling from overwriting a correct status (Fase 2.5/3.3).
+
+    Wrapped in its own try/except: this is the last line of defense, so
+    a failure here must not raise either — it would otherwise escape
+    into the BackgroundTasks machinery with no caller left to catch it.
+    """
+    try:
+        should_notify = False
+        db = SessionLocal()
+        try:
+            repo = AnalysisRequestRepository(db)
+            analysis_request = repo.get_by_id(analysis_request_id)
+            if analysis_request is not None and analysis_request.status in NON_TERMINAL_STATUSES:
+                repo.update(analysis_request_id, AnalysisRequestUpdate(status="failed"))
+                should_notify = True
+        finally:
+            db.close()
+
+        if should_notify:
+            await manager.send_to_analysis_request(
+                analysis_request_id,
+                json.dumps({"type": "run_failed", "node": "runner", "message": "Unhandled internal error"}),
+            )
+    except Exception:
+        logger.exception(
+            "Last-resort failure handler itself failed for analysis_request_id=%s",
+            analysis_request_id,
+        )
 
 
 async def run_analysis(graph, initial_state: dict) -> None:
@@ -60,6 +110,7 @@ async def run_analysis(graph, initial_state: dict) -> None:
             "Unhandled error running graph for analysis_request_id=%s",
             analysis_request_id,
         )
+        await _mark_failed_as_last_resort(analysis_request_id)
 
 
 async def resume_analysis(graph, analysis_request_id: int, decision: str) -> None:
@@ -76,3 +127,4 @@ async def resume_analysis(graph, analysis_request_id: int, decision: str) -> Non
             "Unhandled error resuming graph for analysis_request_id=%s",
             analysis_request_id,
         )
+        await _mark_failed_as_last_resort(analysis_request_id)
