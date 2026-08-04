@@ -12,8 +12,7 @@ times under a different name.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from tests.db import TestSessionLocal
 
 from app.agents.nodes.specialist_node import make_specialist_node
 from app.agents.schemas import SpecialistFinding, SpecialistOutput
@@ -21,10 +20,6 @@ from app.agents.specialists import SPECIALISTS
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.repositories.finding_repository import FindingRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
-
-TEST_DATABASE_URL = "postgresql://user:password@localhost:5434/nexus_test"
-engine = create_engine(TEST_DATABASE_URL)
-TestSessionLocal = sessionmaker(bind=engine)
 
 
 @pytest.mark.asyncio

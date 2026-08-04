@@ -8,16 +8,11 @@ handling covers those separately).
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from tests.db import TestSessionLocal
 
 from app.agents.runner import run_analysis
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate, AnalysisRequestUpdate
-
-TEST_DATABASE_URL = "postgresql://user:password@localhost:5434/nexus_test"
-engine = create_engine(TEST_DATABASE_URL)
-TestSessionLocal = sessionmaker(bind=engine)
 
 
 async def _broken_astream(*args, **kwargs):

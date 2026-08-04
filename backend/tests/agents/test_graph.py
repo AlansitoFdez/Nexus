@@ -16,8 +16,6 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 from langgraph.types import Command
 
@@ -25,11 +23,9 @@ from app.agents.graph import build_graph
 from app.agents.schemas import RouterDecision, SpecialistOutput
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
+from tests.db import TestSessionLocal
 
 REDIS_URL = "redis://localhost:6379"
-TEST_DATABASE_URL = "postgresql://user:password@localhost:5434/nexus_test"
-engine = create_engine(TEST_DATABASE_URL)
-TestSessionLocal = sessionmaker(bind=engine)
 
 
 @pytest.mark.asyncio

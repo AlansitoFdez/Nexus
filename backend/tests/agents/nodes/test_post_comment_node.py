@@ -6,17 +6,12 @@ success (Fase 4).
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from tests.db import TestSessionLocal
 
 from app.agents.nodes.post_comment_node import post_comment_node
 from app.config import settings
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
-
-TEST_DATABASE_URL = "postgresql://user:password@localhost:5434/nexus_test"
-engine = create_engine(TEST_DATABASE_URL)
-TestSessionLocal = sessionmaker(bind=engine)
 
 
 def _state(analysis_request_id: int, **overrides) -> dict:
