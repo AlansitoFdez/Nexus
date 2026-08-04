@@ -18,7 +18,7 @@
  *   live event beat it to the punch.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { decideApproval, listApprovals, getAnalysisRequest, ApiError } from "@/lib/api/client";
 import type { ApprovalDecisionValue, WSEvent } from "@/lib/api/types";
 
@@ -126,13 +126,25 @@ export function ApprovalPanel({ analysisRequestId, events, onResolved }: Approva
       (event.node === "human_approval" || event.node === "post_comment"),
   );
 
+  // onResolved is a fresh function identity on every render of page.tsx
+  // (an inline arrow there) — listing it as a dependency below would
+  // re-run this effect on every render, not just when resumed actually
+  // flips. Stashing the latest callback in a ref sidesteps that: the
+  // effect only needs to depend on resumed itself, and reading
+  // onResolvedRef.current always sees the latest onResolved without
+  // needing to be a dependency (Fase 6 review — replaces a silenced
+  // react-hooks/exhaustive-deps warning with the actual fix for it).
+  const onResolvedRef = useRef(onResolved);
+  useEffect(() => {
+    onResolvedRef.current = onResolved;
+  });
+
   // Fires once, right when the graph actually resumes past the gate — the
   // metrics snapshot (pr_comments_posted in particular) only changes once
   // post_comment_node runs, so this is the signal MetricsPanel needs to
   // know it's worth a refetch.
   useEffect(() => {
-    if (resumed) onResolved?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (resumed) onResolvedRef.current?.();
   }, [resumed]);
 
   if (!liveEvent && fallback.status === "loading") {
