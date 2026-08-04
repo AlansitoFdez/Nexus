@@ -19,12 +19,16 @@
  */
 
 import { useEffect, useState } from "react";
-import { useAnalysisRequestSocket } from "@/lib/hooks/useWebSocket";
 import { decideApproval, listApprovals, getAnalysisRequest, ApiError } from "@/lib/api/client";
 import type { ApprovalDecisionValue, WSEvent } from "@/lib/api/types";
 
 interface ApprovalPanelProps {
   analysisRequestId: number;
+  // Passed down from page.tsx's single useAnalysisRequestSocket call
+  // (Fase 4.6 review) instead of opened here directly — this component
+  // used to open its own socket connection to the same
+  // analysis_request_id AgentTrace was already watching.
+  events: WSEvent[];
   onResolved?: () => void;
 }
 
@@ -51,8 +55,7 @@ function isApprovalRequired(
   return event.type === "approval_required";
 }
 
-export function ApprovalPanel({ analysisRequestId, onResolved }: ApprovalPanelProps) {
-  const { events } = useAnalysisRequestSocket(analysisRequestId);
+export function ApprovalPanel({ analysisRequestId, events, onResolved }: ApprovalPanelProps) {
   const [fallback, setFallback] = useState<FallbackState>({ status: "loading" });
   const [decisionSubmitted, setDecisionSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);

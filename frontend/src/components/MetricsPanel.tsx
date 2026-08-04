@@ -10,14 +10,8 @@
 
 import { useEffect, useState } from "react";
 import { getMetrics } from "@/lib/api/client";
+import { SPECIALIST_LABELS } from "@/lib/specialists";
 import type { Metrics } from "@/lib/api/types";
-
-const SPECIALIST_LABELS: Record<string, string> = {
-  security: "Seguridad",
-  performance: "Rendimiento",
-  design_patterns: "Patrones de diseño",
-  best_practices: "Buenas prácticas",
-};
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendientes",

@@ -1,15 +1,8 @@
 "use client";
 
-import { useAnalysisRequestSocket } from "@/lib/hooks/useWebSocket";
 import { deriveAgentTrace, type SpecialistStatus } from "@/lib/agent-trace";
-import type { Specialist } from "@/lib/api/types";
-
-const SPECIALIST_LABELS: Record<Specialist, string> = {
-  security: "Seguridad",
-  performance: "Rendimiento",
-  design_patterns: "Patrones de diseño",
-  best_practices: "Buenas prácticas",
-};
+import { SPECIALIST_LABELS } from "@/lib/specialists";
+import type { WSEvent } from "@/lib/api/types";
 
 const STATUS_STYLES: Record<SpecialistStatus, string> = {
   running: "border-blue-400 bg-blue-50 text-blue-700 animate-pulse",
@@ -18,7 +11,8 @@ const STATUS_STYLES: Record<SpecialistStatus, string> = {
 };
 
 interface AgentTraceProps {
-  analysisRequestId: number;
+  events: WSEvent[];
+  isConnected: boolean;
 }
 
 /**
@@ -26,9 +20,15 @@ interface AgentTraceProps {
  * "running" (as soon as router_node's chunk names them, all at once —
  * they really do start together, via the Fase 2.4 fan-out) to "done" or
  * "failed" as each one's own chunk arrives.
+ *
+ * events/isConnected are passed down from page.tsx's single
+ * useAnalysisRequestSocket call (Fase 4.6 review) rather than opened
+ * here directly — this component used to open its own socket
+ * connection to the same analysis_request_id ApprovalPanel was already
+ * watching, doubling the traffic and each side only ever seeing events
+ * that arrived after it individually mounted.
  */
-export function AgentTrace({ analysisRequestId }: AgentTraceProps) {
-  const { events, isConnected } = useAnalysisRequestSocket(analysisRequestId);
+export function AgentTrace({ events, isConnected }: AgentTraceProps) {
   const trace = deriveAgentTrace(events);
 
   if (trace.length === 0) {
