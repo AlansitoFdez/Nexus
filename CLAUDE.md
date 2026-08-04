@@ -4,7 +4,7 @@ Sistema de Code Review multi-agente: el usuario sube un repo/código de GitHub y
 
 ## Documentación completa
 
-Plan de fases, registro de decisiones y arquitectura completa: `docs/nexus-plan.md` — consúltalo con `@docs/nexus-plan.md` cuando necesites contexto profundo de una fase concreta; no lo cargues de memoria en cada sesión.
+Plan de fases, registro de decisiones y arquitectura completa: `docs/nexus.md` — consúltalo con `@docs/nexus.md` cuando necesites contexto profundo de una fase concreta; no lo cargues de memoria en cada sesión.
 
 ## Cómo arrancar en local
 
@@ -42,7 +42,7 @@ Actúas como mentor senior, no como generador de código a copiar y pegar. Expli
 
 ### Arranque de Fase o sub-apartado
 
-Al empezar una Fase nueva o un sub-apartado de una Fase (ver `docs/nexus-plan.md`), antes de tocar código paramos a hacer un análisis conjunto: explico qué decisiones de diseño hay que tomar y el porqué de cada una, y las hablamos juntos, para que decida contigo en vez de encontrarte el resultado ya montado. Esto rige incluso en el modo rápido por defecto — no se salta salvo que pidas explícitamente saltarlo para ese arranque concreto.
+Al empezar una Fase nueva o un sub-apartado de una Fase (ver `docs/nexus.md`), antes de tocar código paramos a hacer un análisis conjunto: explico qué decisiones de diseño hay que tomar y el porqué de cada una, y las hablamos juntos, para que decida contigo en vez de encontrarte el resultado ya montado. Esto rige incluso en el modo rápido por defecto — no se salta salvo que pidas explícitamente saltarlo para ese arranque concreto.
 
 ### Explicación del código entregado
 
