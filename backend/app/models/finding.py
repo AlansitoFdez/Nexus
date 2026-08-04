@@ -5,7 +5,7 @@ which specialist produced it, so the synthesizer node can group and
 prioritize findings by source when building the final report.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import CheckConstraint, Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -34,3 +34,17 @@ class Finding(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     analysis_request = relationship("AnalysisRequest", back_populates="findings")
+
+    __table_args__ = (
+        # severity is a truly fixed domain (unlike specialist, whose
+        # valid values track agents/specialists.SPECIALISTS in code —
+        # see FindingCreate's docstring, Fase 4.2 review) — worth
+        # guaranteeing here too, not just in FindingCreate's Literal,
+        # since a garbage value wouldn't fail loudly: synthesizer_node's
+        # SEVERITY_ORDER.get(severity, 99) would just silently sort it
+        # last instead of raising.
+        CheckConstraint(
+            "severity IN ('critical', 'high', 'medium', 'low')",
+            name="ck_findings_valid_severity",
+        ),
+    )

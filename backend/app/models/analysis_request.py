@@ -61,4 +61,14 @@ class AnalysisRequest(Base):
             "(post_to_pr = true AND source_type = 'github_repo' AND pr_number IS NOT NULL)",
             name="ck_analysis_requests_post_to_pr_requires_pr_number",
         ),
+        # A truly fixed domain (the pipeline's own status lifecycle),
+        # unlike Finding.specialist — worth guaranteeing at the database
+        # level too, not just in AnalysisRequestUpdate's Literal, since a
+        # garbage value here wouldn't fail loudly: MetricsRepository's
+        # by_status grouping and the frontend's STATUS_LABELS lookup
+        # would both just show it as an unrecognized key (Fase 4.2 review).
+        CheckConstraint(
+            "status IN ('pending', 'running', 'completed', 'completed_with_errors', 'failed')",
+            name="ck_analysis_requests_valid_status",
+        ),
     )

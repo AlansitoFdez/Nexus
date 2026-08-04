@@ -7,7 +7,7 @@ on the real PR (post_to_pr). Always linked to the AnalysisRequest that
 generated it.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import CheckConstraint, Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import sqlalchemy as sa
@@ -48,3 +48,10 @@ class Approval(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     analysis_request = relationship("AnalysisRequest", back_populates="approvals")
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'approved', 'rejected')",
+            name="ck_approvals_valid_status",
+        ),
+    )
