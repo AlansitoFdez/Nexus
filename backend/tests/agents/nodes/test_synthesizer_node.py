@@ -157,5 +157,8 @@ async def test_synthesizer_returns_error_on_unexpected_database_failure(db_sessi
          patch.object(AnalysisRequestRepository, "update", side_effect=RuntimeError("connection lost")):
         result = await synthesizer_node(state)
 
-    assert "connection lost" in result["error"]
+    assert "error" in result
+    # The raw exception must not reach state["error"] (Fase 3 review,
+    # 3.4) — it's forwarded verbatim to the browser over WebSocket.
+    assert "connection lost" not in result["error"]
     assert "final_report" in result

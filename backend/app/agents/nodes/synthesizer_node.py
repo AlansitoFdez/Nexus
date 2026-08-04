@@ -20,6 +20,8 @@ from the Fase 2.4 fan-out to finish — no manual synchronization needed
 here, that join is implicit in how the edges get wired in Fase 2.12.
 """
 
+import logging
+
 from langchain_groq import ChatGroq
 
 from app.agents.state import CodeReviewState
@@ -30,6 +32,8 @@ from app.repositories.analysis_request_repository import (
     AnalysisRequestNotFoundError,
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
+
+logger = logging.getLogger("nexus.synthesizer_node")
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
@@ -104,10 +108,16 @@ async def synthesizer_node(state: CodeReviewState) -> dict:
         # Same reasoning as entry_node's widened except: the "not found"
         # case isn't the only way this write can fail, and an uncaught
         # exception here would leave the AnalysisRequest at "running"
-        # forever with no route to failure_node.
+        # forever with no route to failure_node. Logged, not returned
+        # verbatim: state["error"] is forwarded to the browser as-is by
+        # ws_events.build_event (Fase 3 review, 3.4).
+        logger.error(
+            "Failed to persist AnalysisRequest %s during synthesizer_node: %s",
+            state["analysis_request_id"], exc,
+        )
         return {
             "final_report": final_report,
-            "error": f"Failed to persist AnalysisRequest {state['analysis_request_id']} during synthesizer_node: {exc}",
+            "error": f"Failed to persist AnalysisRequest {state['analysis_request_id']} during synthesizer_node",
             "node_history": ["synthesizer"],
         }
     finally:

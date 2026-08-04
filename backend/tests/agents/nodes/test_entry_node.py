@@ -99,6 +99,11 @@ async def test_entry_node_returns_error_when_repo_read_fails(db_session):
         result = await entry_node(state)
 
     assert "error" in result
+    # The raw exception text must not reach state["error"] (Fase 3
+    # review, 3.4) — ws_events.build_event forwards this field verbatim
+    # to the browser over WebSocket, and a raw connection error could
+    # carry internal detail a GitHubAPIError's own clean messages don't.
+    assert "no se pudo conectar" not in result["error"]
     assert result["node_history"] == ["entry"]
 
 
@@ -142,5 +147,8 @@ async def test_entry_node_returns_error_on_unexpected_database_failure(db_sessio
          patch.object(AnalysisRequestRepository, "update", side_effect=RuntimeError("connection lost")):
         result = await entry_node(state)
 
-    assert "connection lost" in result["error"]
+    assert "error" in result
+    # Same sanitization as the repo-read failure above (Fase 3 review,
+    # 3.4): the raw exception is safe to log, not to hand to the client.
+    assert "connection lost" not in result["error"]
     assert result["node_history"] == ["entry"]

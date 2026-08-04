@@ -12,6 +12,8 @@ worth of content, so it only lives in the graph state for the
 duration of this run.
 """
 
+import logging
+
 from fastmcp import Client
 
 from app.agents.state import CodeReviewState
@@ -23,6 +25,8 @@ from app.repositories.analysis_request_repository import (
 from app.schemas.analysis_request import AnalysisRequestUpdate
 from app.api.websocket import manager
 from app.config import settings
+
+logger = logging.getLogger("nexus.entry_node")
 
 
 async def entry_node(state: CodeReviewState) -> dict:
@@ -36,8 +40,16 @@ async def entry_node(state: CodeReviewState) -> dict:
                 )
             code_content = result.data
         except Exception as exc:
+            # The raw exception text isn't safe to hand to the client —
+            # ws_events.build_event forwards state["error"] verbatim as a
+            # "run_failed" event over the websocket, and unlike
+            # GitHubAPIError's own deliberately clean messages, this
+            # branch also catches things like a raw connection error,
+            # which could carry internal detail (host, ports, headers).
+            # The repo_url itself is safe to keep: it's the user's own input.
+            logger.error("Failed to read repository %s: %s", state["repo_url"], exc)
             return {
-                "error": f"Failed to read repository {state['repo_url']}: {exc}",
+                "error": f"Failed to read repository {state['repo_url']}",
                 "node_history": ["entry"],
             }
 
@@ -55,9 +67,15 @@ async def entry_node(state: CodeReviewState) -> dict:
         # a truncated column, ...) must still land in state["error"] —
         # AnalysisRequestNotFoundError alone doesn't cover it, and an
         # uncaught exception would propagate out of this node with
-        # nothing left to mark the AnalysisRequest as failed.
+        # nothing left to mark the AnalysisRequest as failed. Same
+        # sanitization reasoning as above: log the real exception,
+        # keep the client-facing message free of internal detail.
+        logger.error(
+            "Failed to update AnalysisRequest %s status during entry_node: %s",
+            state["analysis_request_id"], exc,
+        )
         return {
-            "error": f"Failed to update AnalysisRequest {state['analysis_request_id']} status during entry_node: {exc}",
+            "error": f"Failed to update AnalysisRequest {state['analysis_request_id']} status during entry_node",
             "node_history": ["entry"],
         }
     finally:
