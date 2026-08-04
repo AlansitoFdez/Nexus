@@ -59,4 +59,7 @@ async def test_router_node_returns_error_when_llm_call_fails():
         result = await router_node(state)
 
     assert "error" in result
+    # The raw exception must not reach state["error"] (Fase 3 review,
+    # 3.4) — it's forwarded verbatim to the browser over WebSocket.
+    assert "groq unavailable" not in result["error"]
     assert result["node_history"] == ["router"]
