@@ -73,18 +73,23 @@ class MetricsRepository:
         completed_at column, so this leans on updated_at's onupdate
         trigger instead, on the assumption that nothing touches the row
         again after synthesizer_node/failure_node set its terminal
-        status — true today, not enforced by anything. Returns None
-        instead of 0 when there's no terminal data yet, since "0 seconds
-        average" would misleadingly read as "instant," not "no data."
+        status — true today, not enforced by anything.
+
+        Averaged in SQL (func.avg over func.extract("epoch", ...)), not
+        by pulling every matching row into Python and dividing there
+        (Fase 4.3 review) — this module's own docstring already argues
+        for that, and this was the one method here that didn't follow
+        it. AVG() over zero matching rows returns NULL in Postgres,
+        which arrives here as None — exactly the "no data yet" signal
+        this already needed, for free, instead of a separate row-count
+        check.
         """
-        rows = (
-            self.db.query(AnalysisRequest.created_at, AnalysisRequest.updated_at)
+        average_seconds = (
+            self.db.query(
+                func.avg(func.extract("epoch", AnalysisRequest.updated_at - AnalysisRequest.created_at))
+            )
             .filter(AnalysisRequest.status.in_(TERMINAL_STATUSES))
             .filter(AnalysisRequest.updated_at.isnot(None))
-            .all()
+            .scalar()
         )
-        if not rows:
-            return None
-
-        durations = [(updated_at - created_at).total_seconds() for created_at, updated_at in rows]
-        return sum(durations) / len(durations)
+        return float(average_seconds) if average_seconds is not None else None
