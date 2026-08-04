@@ -1,6 +1,5 @@
 """Tests for conditional edges routing the code-review graph."""
 
-from langgraph.graph import END
 from langgraph.types import Send
 
 from app.agents.edges import route_after_router, route_after_entry, route_after_synthesizer
@@ -92,6 +91,9 @@ def test_route_after_synthesizer_proceeds_to_human_approval_when_no_error():
     assert route_after_synthesizer(state) == "human_approval_node"
 
 
-def test_route_after_synthesizer_ends_on_error():
+def test_route_after_synthesizer_routes_to_failure_node_on_error():
+    """Regression (Fase 4.5 review): this used to route straight to
+    END, leaving the AnalysisRequest stuck at "running" forever since
+    nothing else would persist status="failed" for it."""
     state = {"error": "AnalysisRequest 1 not found during synthesizer_node"}
-    assert route_after_synthesizer(state) == END
+    assert route_after_synthesizer(state) == "failure_node"
