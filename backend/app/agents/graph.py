@@ -5,21 +5,23 @@ with a single failure_node terminal path for pre-fanout errors
 
 build_graph() takes an already-created checkpointer rather than
 opening its own Redis connection — the connection's lifecycle (when
-to open/close it) is the caller's responsibility. Wiring this to
-FastAPI's lifespan (opening the connection once at app startup) is
-still a documented pending item, inherited unresolved from the ticket
-domain.
+to open/close it) is the caller's responsibility. FastAPI's lifespan
+(app/main.py) owns that connection for the app's whole lifetime and
+calls this function once at startup.
+
+Specialist nodes are registered from SPECIALISTS (Fase 4.1 review)
+instead of one add_node() call per hand-imported specialist — adding a
+fifth specialist to the ensemble now means adding one entry to that
+dict, not editing this loop.
 """
 
 from langgraph.graph import StateGraph, START, END
 
 from app.agents.state import CodeReviewState
+from app.agents.specialists import SPECIALISTS
 from app.agents.nodes.entry_node import entry_node
 from app.agents.nodes.router_node import router_node
-from app.agents.nodes.specialists.security_agent import security_agent
-from app.agents.nodes.specialists.performance_agent import performance_agent
-from app.agents.nodes.specialists.design_patterns_agent import design_patterns_agent
-from app.agents.nodes.specialists.best_practices_agent import best_practices_agent
+from app.agents.nodes.specialist_node import make_specialist_node
 from app.agents.nodes.synthesizer_node import synthesizer_node
 from app.agents.nodes.human_approval_node import human_approval_node
 from app.agents.nodes.post_comment_node import post_comment_node
@@ -43,10 +45,10 @@ async def build_graph(checkpointer):
 
     graph.add_node("entry_node", entry_node)
     graph.add_node("router_node", router_node)
-    graph.add_node("security_agent", security_agent)
-    graph.add_node("performance_agent", performance_agent)
-    graph.add_node("design_patterns_agent", design_patterns_agent)
-    graph.add_node("best_practices_agent", best_practices_agent)
+
+    for name, prompt in SPECIALISTS.items():
+        graph.add_node(f"{name}_agent", make_specialist_node(name, prompt))
+
     graph.add_node("synthesizer_node", synthesizer_node)
     graph.add_node("human_approval_node", human_approval_node)
     graph.add_node("post_comment_node", post_comment_node)
@@ -56,8 +58,8 @@ async def build_graph(checkpointer):
     graph.add_conditional_edges("entry_node", route_after_entry)
     graph.add_conditional_edges("router_node", route_after_router)
 
-    for specialist in ("security_agent", "performance_agent", "design_patterns_agent", "best_practices_agent"):
-        graph.add_edge(specialist, "synthesizer_node")
+    for name in SPECIALISTS:
+        graph.add_edge(f"{name}_agent", "synthesizer_node")
 
     graph.add_conditional_edges("synthesizer_node", route_after_synthesizer)
     graph.add_edge("human_approval_node", "post_comment_node")

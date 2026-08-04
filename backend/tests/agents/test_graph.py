@@ -97,12 +97,12 @@ async def test_graph_pauses_at_human_approval_and_resumes_on_approval(db_session
         }
 
         with patch("app.agents.nodes.router_node.ChatGroq", return_value=mock_router_llm), \
-             patch("app.agents.nodes.specialists.security_agent.ChatGroq", return_value=mock_specialist_llm), \
+             patch("app.agents.nodes.specialist_node.ChatGroq", return_value=mock_specialist_llm), \
              patch("app.agents.nodes.synthesizer_node.ChatGroq", return_value=mock_synth_llm), \
              patch("app.agents.nodes.entry_node.Client", return_value=mock_entry_client), \
              patch("app.agents.nodes.post_comment_node.Client", return_value=mock_post_comment_client), \
              patch("app.agents.nodes.entry_node.SessionLocal", TestSessionLocal), \
-             patch("app.agents.nodes.specialists.security_agent.SessionLocal", TestSessionLocal), \
+             patch("app.agents.nodes.specialist_node.SessionLocal", TestSessionLocal), \
              patch("app.agents.nodes.synthesizer_node.SessionLocal", TestSessionLocal), \
              patch("app.agents.nodes.human_approval_node.SessionLocal", TestSessionLocal), \
              patch("app.agents.nodes.post_comment_node.SessionLocal", TestSessionLocal):

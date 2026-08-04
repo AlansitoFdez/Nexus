@@ -28,12 +28,11 @@ changes.
 
 from typing import Any
 
-SPECIALIST_NODES = {
-    "security_agent",
-    "performance_agent",
-    "design_patterns_agent",
-    "best_practices_agent",
-}
+from app.agents.specialists import SPECIALISTS
+
+# Derived from SPECIALISTS (Fase 4.1 review) — every specialist's node
+# name follows the "{name}_agent" convention graph.py registers it under.
+SPECIALIST_NODES = {f"{name}_agent" for name in SPECIALISTS}
 
 NODE_DISPLAY_NAMES = {
     "entry_node": "entry",

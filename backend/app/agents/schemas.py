@@ -9,6 +9,8 @@ Fase 2.3 architecture discussion for the reasoning.
 from typing import Literal
 from pydantic import BaseModel, Field
 
+from app.agents.specialists import SPECIALISTS
+
 
 class RouterDecision(BaseModel):
     """The router's decision on which specialists should run.
@@ -24,9 +26,14 @@ class RouterDecision(BaseModel):
     applies here too. An empty list would otherwise fan out to zero
     Send()s in route_after_router, ending the graph with the
     AnalysisRequest stuck at status="running" forever.
+
+    The Literal itself is built from SPECIALISTS' keys (Fase 4.1
+    review) instead of listed by hand — adding a fifth specialist to
+    the ensemble means adding one entry there, not remembering to also
+    update this Literal to match.
     """
 
-    agents_to_run: list[Literal["security", "performance", "design_patterns", "best_practices"]] = Field(min_length=1)
+    agents_to_run: list[Literal[*SPECIALISTS.keys()]] = Field(min_length=1)
     reasoning: str
 
 

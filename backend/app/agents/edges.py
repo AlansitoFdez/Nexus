@@ -16,17 +16,15 @@ route_after_synthesizer skips human_approval_node if synthesizer_node
 itself failed to persist — nothing meaningful to gate at that point.
 """
 
-from langgraph.graph import END
 from langgraph.types import Send
 
+from app.agents.specialists import SPECIALISTS
 from app.agents.state import CodeReviewState
 
-AGENT_TO_NODE_NAME = {
-    "security": "security_agent",
-    "performance": "performance_agent",
-    "design_patterns": "design_patterns_agent",
-    "best_practices": "best_practices_agent",
-}
+# Derived from SPECIALISTS (Fase 4.1 review) rather than listed by hand —
+# every specialist's node name follows the same "{name}_agent" convention
+# graph.py registers it under.
+AGENT_TO_NODE_NAME = {name: f"{name}_agent" for name in SPECIALISTS}
 
 
 def route_after_entry(state: CodeReviewState) -> str:
@@ -69,8 +67,18 @@ def route_after_router(state: CodeReviewState) -> list[Send] | str:
 
 
 def route_after_synthesizer(state: CodeReviewState) -> str:
-    """Skips human_approval_node if synthesizer_node itself failed to
-    persist the final report — nothing meaningful left to gate."""
+    """Routes to human_approval_node normally, or to failure_node if
+    synthesizer_node itself failed to persist — the same terminal path
+    every other pre-fanout failure already uses (route_after_entry,
+    route_after_router).
+
+    This used to go straight to END instead (Fase 4.5 review): when
+    synthesizer_node's own DB write fails, nothing persists a status at
+    all — the row stays at whatever it was before ("running") — so
+    ending here directly left it stuck that way forever, exactly the
+    failure_node was built to prevent for the other two pre-fanout
+    paths.
+    """
     if state.get("error"):
-        return END
+        return "failure_node"
     return "human_approval_node"
