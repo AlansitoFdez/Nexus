@@ -1,6 +1,6 @@
 """Repository for AnalysisRequest database operations."""
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.analysis_request import AnalysisRequest
 from app.schemas.analysis_request import AnalysisRequestCreate, AnalysisRequestUpdate
@@ -34,8 +34,16 @@ class AnalysisRequestRepository:
         return self.db.query(AnalysisRequest).filter(AnalysisRequest.id == analysis_request_id).first()
 
     def get_all(self) -> list[AnalysisRequest]:
-        """Retrieves all analysis requests."""
-        return self.db.query(AnalysisRequest).all()
+        """Retrieves all analysis requests.
+
+        AnalysisRequestResponse (the only consumer, GET /analysis-requests/)
+        nests findings directly, and that relationship is lazy by
+        default — without selectinload here, serializing N requests
+        would run N extra queries, one per request, to fetch each one's
+        findings (Fase 4.4 review). One extra query total instead,
+        regardless of how many requests there are.
+        """
+        return self.db.query(AnalysisRequest).options(selectinload(AnalysisRequest.findings)).all()
 
     def update(self, analysis_request_id: int, data: AnalysisRequestUpdate) -> AnalysisRequest:
         """Applies a partial update to an existing analysis request.
