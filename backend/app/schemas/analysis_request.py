@@ -2,9 +2,19 @@
 
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.finding import FindingResponse
+
+# Behavioral limits on user-controlled input, not deployment config — same
+# category as MAX_FILE_SIZE_BYTES/MAX_TOTAL_SIZE_BYTES in github_client.py,
+# so it lives here as a module constant, not in Settings. Without these,
+# pasted_code/review_request could be arbitrarily large before ever
+# reaching a specialist's prompt — an unbounded string here has the same
+# "ends up whole in the LLM prompt" risk that motivated those limits on
+# the github_repo path.
+MAX_REVIEW_REQUEST_LENGTH = 2_000
+MAX_PASTED_CODE_LENGTH = 500_000  # same order of magnitude as MAX_TOTAL_SIZE_BYTES
 
 
 class AnalysisRequestCreate(BaseModel):
@@ -18,8 +28,8 @@ class AnalysisRequestCreate(BaseModel):
 
     source_type: Literal["github_repo", "pasted_code"]
     repo_url: str | None = None
-    pasted_code: str | None = None
-    review_request: str
+    pasted_code: str | None = Field(default=None, max_length=MAX_PASTED_CODE_LENGTH)
+    review_request: str = Field(max_length=MAX_REVIEW_REQUEST_LENGTH)
     post_to_pr: bool = False
     pr_number: int | None = None
 

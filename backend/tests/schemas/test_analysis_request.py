@@ -3,7 +3,11 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas.analysis_request import AnalysisRequestCreate
+from app.schemas.analysis_request import (
+    MAX_PASTED_CODE_LENGTH,
+    MAX_REVIEW_REQUEST_LENGTH,
+    AnalysisRequestCreate,
+)
 
 
 def test_create_accepts_valid_github_repo_source():
@@ -93,4 +97,24 @@ def test_create_fails_when_post_to_pr_true_without_pr_number():
             repo_url="https://github.com/alan/nexus",
             review_request="revisa x",
             post_to_pr=True,
+        )
+
+
+def test_create_fails_when_review_request_exceeds_max_length():
+    """Without this, an unbounded review_request would ride along
+    unchanged into every specialist's prompt (Fase 3 review, 3.3)."""
+    with pytest.raises(ValidationError):
+        AnalysisRequestCreate(
+            source_type="pasted_code",
+            pasted_code="def foo(): pass",
+            review_request="x" * (MAX_REVIEW_REQUEST_LENGTH + 1),
+        )
+
+
+def test_create_fails_when_pasted_code_exceeds_max_length():
+    with pytest.raises(ValidationError):
+        AnalysisRequestCreate(
+            source_type="pasted_code",
+            pasted_code="x" * (MAX_PASTED_CODE_LENGTH + 1),
+            review_request="revisa x",
         )
