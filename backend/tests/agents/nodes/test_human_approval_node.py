@@ -2,8 +2,8 @@
 
 interrupt() itself is patched directly rather than exercised for real —
 verifying that it actually pauses graph execution requires a compiled
-graph with a real Redis checkpointer (Fase 2.12, still pending per the
-roadmap even in the ticket domain). These tests cover this node's own
+graph with a real Redis checkpointer, which is what test_graph.py's
+integration test covers instead. These tests cover this node's own
 logic: creating/updating the Approval record and building the correct
 state delta given whatever decision comes back.
 """
