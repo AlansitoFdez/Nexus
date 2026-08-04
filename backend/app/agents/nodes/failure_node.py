@@ -31,7 +31,7 @@ from app.repositories.analysis_request_repository import (
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 
-logger = logging.getLogger("nexus.failure_node")
+logger = logging.getLogger(__name__)
 
 
 async def failure_node(state: CodeReviewState) -> dict:

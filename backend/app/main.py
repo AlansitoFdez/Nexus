@@ -4,6 +4,7 @@ Assembles all routers and middleware (CORS) into a single app instance,
 served via `uvicorn app.main:app`.
 """
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -14,6 +15,14 @@ from app import models
 from app.agents.graph import build_graph
 from app.api import approvals, websocket, analysis_requests, metrics
 from app.config import settings
+from app.logging_config import setup_logging
+
+# Configured once, at module load — before the lifespan even starts, so
+# every node/repository/tool that logs during startup (or the very
+# first request, which can race the lifespan's own setup) already goes
+# through the structured JSON formatter (Fase 5.1), not Python's
+# unconfigured default (WARNING, no handler).
+setup_logging(logging.DEBUG if settings.ENVIRONMENT == "development" else logging.INFO)
 
 
 @asynccontextmanager

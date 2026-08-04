@@ -33,7 +33,7 @@ from app.repositories.analysis_request_repository import (
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 
-logger = logging.getLogger("nexus.synthesizer_node")
+logger = logging.getLogger(__name__)
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 

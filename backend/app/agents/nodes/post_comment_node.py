@@ -42,7 +42,7 @@ from app.repositories.analysis_request_repository import (
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 
-logger = logging.getLogger("nexus.post_comment")
+logger = logging.getLogger(__name__)
 
 
 async def post_comment_node(state: CodeReviewState) -> dict:

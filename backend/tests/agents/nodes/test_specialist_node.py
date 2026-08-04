@@ -89,7 +89,7 @@ async def test_specialist_returns_empty_findings_when_no_issues_found(name, db_s
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("name", list(SPECIALISTS.keys()))
-async def test_specialist_returns_failed_specialist_when_llm_call_fails(name, db_session):
+async def test_specialist_returns_failed_specialist_when_llm_call_fails(name, db_session, caplog):
     node = make_specialist_node(name, SPECIALISTS[name])
     payload = {"code_content": "def foo(): pass", "review_request": f"revisa {name}", "analysis_request_id": 999}
 
@@ -106,10 +106,15 @@ async def test_specialist_returns_failed_specialist_when_llm_call_fails(name, db
     assert result["node_history"] == [f"{name}_agent"]
     assert "error" not in result
 
+    # Fase 5.1 review: before this, a specialist's LLM failure vanished
+    # completely — only its bare name showed up in failed_specialists,
+    # with no record anywhere of what actually went wrong.
+    assert any(name in record.message and "LLM call" in record.message for record in caplog.records)
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("name", list(SPECIALISTS.keys()))
-async def test_specialist_returns_failed_specialist_when_analysis_request_missing(name, db_session):
+async def test_specialist_returns_failed_specialist_when_analysis_request_missing(name, db_session, caplog):
     node = make_specialist_node(name, SPECIALISTS[name])
     payload = {"code_content": "def foo(): pass", "review_request": f"revisa {name}", "analysis_request_id": 999}
 
@@ -125,3 +130,6 @@ async def test_specialist_returns_failed_specialist_when_analysis_request_missin
         result = await node(payload)
 
     assert result["failed_specialists"] == [name]
+    # Fase 5.1 review: same as the LLM-failure case above, but for a
+    # persistence failure (here, the analysis request doesn't exist).
+    assert any(name in record.message and "persist" in record.message for record in caplog.records)

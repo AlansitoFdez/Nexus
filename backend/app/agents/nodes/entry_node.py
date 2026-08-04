@@ -26,7 +26,7 @@ from app.schemas.analysis_request import AnalysisRequestUpdate
 from app.api.websocket import manager
 from app.config import settings
 
-logger = logging.getLogger("nexus.entry_node")
+logger = logging.getLogger(__name__)
 
 
 async def entry_node(state: CodeReviewState) -> dict:

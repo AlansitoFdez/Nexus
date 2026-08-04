@@ -28,6 +28,7 @@ from langgraph.types import Command
 from app.agents.ws_events import build_event
 from app.api.websocket import manager
 from app.database import SessionLocal
+from app.logging_config import analysis_request_id_var
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestUpdate
 
@@ -49,7 +50,16 @@ def _config_for(analysis_request_id: int) -> dict:
 async def _stream_and_broadcast(graph, analysis_request_id: int, run_input) -> None:
     """Shared core of run_analysis/resume_analysis: drives the graph and
     relays each meaningful step to whichever dashboard clients are
-    watching this analysis_request_id."""
+    watching this analysis_request_id.
+
+    Sets analysis_request_id_var (Fase 5.1) before the graph starts
+    running, not inside each individual node: this is the one choke
+    point both run_analysis and resume_analysis funnel through, and
+    every node's own logging picks the value up automatically for the
+    rest of this run — including inside the Send() fan-out, since a new
+    asyncio Task copies the current context at creation time.
+    """
+    analysis_request_id_var.set(analysis_request_id)
     config = _config_for(analysis_request_id)
     async for chunk in graph.astream(run_input, config=config, stream_mode="updates"):
         for event in build_event(chunk):

@@ -17,7 +17,7 @@ from app.agents.state import CodeReviewState
 from app.agents.schemas import RouterDecision
 from app.config import settings
 
-logger = logging.getLogger("nexus.router_node")
+logger = logging.getLogger(__name__)
 
 ROUTER_PROMPT = """Eres un router que decide qué especialistas deben \
 analizar un fragmento de código, según lo que el usuario pidió revisar.

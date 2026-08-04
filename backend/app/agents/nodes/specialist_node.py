@@ -15,7 +15,17 @@ needs SpecialistOutput from agents/schemas.py, and agents/schemas.py
 itself needs SPECIALISTS (for RouterDecision's dynamic Literal) — so
 agents/specialists.py stays a zero-dependency registry precisely so it
 can be imported from schemas.py without a cycle back through here.
+
+Both except blocks now log the real exception (Fase 5.1 review) —
+before, a specialist's failure vanished completely: only its name
+showed up in failed_specialists, with no record anywhere of what
+actually went wrong. Safe to log the raw exception here, unlike
+state["error"] elsewhere in the graph: this never becomes a
+client-facing WebSocket event (see ws_events.build_event), only
+failed_specialists' bare name does.
 """
+
+import logging
 
 from langchain_groq import ChatGroq
 
@@ -25,6 +35,8 @@ from app.database import SessionLocal
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.repositories.finding_repository import FindingRepository
 from app.schemas.finding import FindingCreate
+
+logger = logging.getLogger(__name__)
 
 
 def make_specialist_node(name: str, prompt: str):
@@ -47,6 +59,7 @@ def make_specialist_node(name: str, prompt: str):
                 )
             )
         except Exception:
+            logger.error("Specialist %s failed during the LLM call", name, exc_info=True)
             return {"failed_specialists": [name], "node_history": [f"{name}_agent"]}
 
         db = SessionLocal()
@@ -71,6 +84,7 @@ def make_specialist_node(name: str, prompt: str):
                     "suggestion": saved.suggestion,
                 })
         except Exception:
+            logger.error("Specialist %s failed to persist its findings", name, exc_info=True)
             return {"failed_specialists": [name], "node_history": [f"{name}_agent"]}
         finally:
             db.close()
