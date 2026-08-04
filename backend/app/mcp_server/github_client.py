@@ -81,9 +81,13 @@ def parse_repo_url(repo_url: str) -> tuple[str, str]:
     """Extracts (owner, repo) from a GitHub URL.
 
     Accepts the common shapes: with or without a trailing slash, with
-    or without a trailing .git, with or without the https:// scheme.
+    or without a trailing .git, with or without the https:// scheme —
+    and, since Fase 6 review, with anything after the repo name too
+    (e.g. .../pull/42, the URL a user most naturally copies straight
+    out of the browser when the intent is "comment on this PR" — the
+    form NewAnalysisForm's repo_url field never actually enforced).
     """
-    match = re.search(r"github\.com[/:]([^/]+)/([^/]+?)(?:\.git)?/?$", repo_url.strip())
+    match = re.search(r"github\.com[/:]([^/]+)/([^/]+?)(?:\.git)?(?:/.*)?$", repo_url.strip())
     if not match:
         raise GitHubAPIError(f"'{repo_url}' doesn't look like a valid GitHub repository URL")
     return match.group(1), match.group(2)

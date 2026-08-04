@@ -66,6 +66,11 @@ class TestParseRepoUrl:
     def test_trailing_dot_git(self):
         assert parse_repo_url("https://github.com/alan/nexus.git") == ("alan", "nexus")
 
+    def test_trailing_path_after_repo_name(self):
+        """The URL a user most naturally copies out of the browser when
+        the intent is "comment on this PR" (Fase 6 review)."""
+        assert parse_repo_url("https://github.com/alan/nexus/pull/42") == ("alan", "nexus")
+
     def test_invalid_url_raises(self):
         with pytest.raises(GitHubAPIError):
             parse_repo_url("not-a-github-url")
