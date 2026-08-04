@@ -128,6 +128,19 @@ class TestFetchRepositoryFiles:
                 await fetch_repository_files("https://github.com/alan/docs-only")
 
     @pytest.mark.asyncio
+    async def test_oversized_archive_raises_before_parsing(self):
+        from app.mcp_server import github_client as gc
+
+        responses = [
+            _mock_response(200, json_data={"default_branch": "main"}),
+            _mock_response(200, content=b"x" * (gc.MAX_ARCHIVE_SIZE_BYTES + 1)),
+        ]
+
+        with patch("app.mcp_server.github_client.httpx.AsyncClient", return_value=_mock_client(responses)):
+            with pytest.raises(GitHubAPIError, match="exceeds the"):
+                await fetch_repository_files("https://github.com/alan/huge-repo")
+
+    @pytest.mark.asyncio
     async def test_oversized_file_is_skipped(self):
         from app.mcp_server import github_client as gc
 

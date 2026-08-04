@@ -42,6 +42,18 @@ GITHUB_API_BASE: Final = "https://api.github.com"
 MAX_FILE_SIZE_BYTES: Final = 100_000  # skip any single file larger than this
 MAX_TOTAL_SIZE_BYTES: Final = 500_000  # stop collecting once this much content is gathered
 
+# Guards the zipball download itself, before it ever reaches
+# _extract_source_files — without this, an unusually large repo (or one
+# whose zipball is inflated by binary assets that _is_included() would
+# have filtered out anyway) gets parsed and walked in full for nothing.
+# Note this doesn't reduce peak memory during the download itself:
+# httpx.AsyncClient.get() already buffers the whole response body before
+# this check ever runs. Fixing that would mean switching to
+# client.stream() — deferred alongside the Fase 6 auth work (Fase 3
+# review), since it would also require rewriting every existing
+# TestFetchRepositoryFiles mock, currently built around a plain .get().
+MAX_ARCHIVE_SIZE_BYTES: Final = 50_000_000
+
 # Extensions worth sending to a code review LLM. Lockfiles, configs,
 # and binaries add token cost without review value in this domain.
 INCLUDED_EXTENSIONS: Final = {
@@ -158,6 +170,12 @@ async def fetch_repository_files(repo_url: str) -> str:
             f"{GITHUB_API_BASE}/repos/{owner}/{repo}/zipball/{default_branch}"
         )
         _raise_for_github_status(zip_response, f"Downloading archive for {owner}/{repo}")
+
+    if len(zip_response.content) > MAX_ARCHIVE_SIZE_BYTES:
+        raise GitHubAPIError(
+            f"Downloading archive for {owner}/{repo}: archive is "
+            f"{len(zip_response.content):,} bytes, exceeds the {MAX_ARCHIVE_SIZE_BYTES:,} byte limit"
+        )
 
     return _extract_source_files(zip_response.content)
 
