@@ -6,7 +6,10 @@ from sqlalchemy import func, update
 from sqlalchemy.orm import Session
 
 from app.models.approval import Approval
-from app.repositories.analysis_request_repository import AnalysisRequestRepository
+from app.repositories.analysis_request_repository import (
+    AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
+)
 from app.schemas.approval import ApprovalCreate, ApprovalUpdate
 
 
@@ -31,7 +34,6 @@ class ApprovalRepository:
         """
         analysis_request = self.analysis_request_repo.get_by_id(data.analysis_request_id)
         if analysis_request is None:
-            from app.repositories.analysis_request_repository import AnalysisRequestNotFoundError
             raise AnalysisRequestNotFoundError(
                 f"AnalysisRequest {data.analysis_request_id} does not exist"
             )
