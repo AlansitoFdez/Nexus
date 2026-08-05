@@ -40,16 +40,25 @@ export function useAnalysisRequestSocket(
   const [logs, setLogs] = useState<string[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
+  // Resets events/logs during render, not inside the effect below —
+  // React's own recommended pattern for "clear state when a prop
+  // changes" (https://react.dev/learn/you-might-not-need-an-effect):
+  // calling setState here, mid-render, lets React re-render immediately
+  // with the reset state before ever committing the stale one, instead
+  // of committing once with the previous run's events and only
+  // clearing them a moment later once the effect runs — the extra
+  // render the react-hooks/set-state-in-effect rule flags.
+  const [watchedId, setWatchedId] = useState(analysisRequestId);
+  if (analysisRequestId !== watchedId) {
+    setWatchedId(analysisRequestId);
+    setEvents([]);
+    setLogs([]);
+  }
+
   useEffect(() => {
     if (analysisRequestId === null) {
       return;
     }
-
-    // Reset when switching from watching one analysis request to
-    // another — otherwise a previous run's events would linger and mix
-    // in with the new one's trace.
-    setEvents([]);
-    setLogs([]);
 
     const socket = new WebSocket(wsUrlFor(analysisRequestId));
 

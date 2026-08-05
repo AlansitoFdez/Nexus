@@ -61,9 +61,22 @@ export function ApprovalPanel({ analysisRequestId, events, onResolved }: Approva
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Resets fallback to "loading" during render, not inside the effect
+  // below — same react-hooks/set-state-in-effect fix as useWebSocket.ts,
+  // and the same React-recommended pattern for "clear state when a
+  // prop changes." In practice page.tsx always keys this component by
+  // analysisRequestId, so React already remounts it (and this branch
+  // never actually fires) — kept anyway so this component stays
+  // correct for a future caller that passes a new analysisRequestId
+  // without remounting.
+  const [watchedAnalysisRequestId, setWatchedAnalysisRequestId] = useState(analysisRequestId);
+  if (analysisRequestId !== watchedAnalysisRequestId) {
+    setWatchedAnalysisRequestId(analysisRequestId);
+    setFallback({ status: "loading" });
+  }
+
   useEffect(() => {
     let cancelled = false;
-    setFallback({ status: "loading" });
 
     async function loadFallback() {
       try {
