@@ -1,0 +1,119 @@
+name: CI
+
+# Two independent jobs (backend/frontend) instead of one sequential job
+# (Fase 5.2 review) — they run in parallel, and GitHub's own summary
+# shows which one failed at a glance without opening logs.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    # Service containers matching docker-compose.yml's own images —
+    # GitHub runs these as sibling containers and exposes their ports
+    # on localhost for the job's steps, the same way the local
+    # docker-compose stack does for development. redis-stack-server,
+    # not plain redis: langgraph-checkpoint-redis needs RediSearch.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: nexus_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis/redis-stack-server:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # DATABASE_URL/REDIS_URL point at the service containers above —
+    # ports match tests/db.py and test_graph.py's own hardcoded
+    # localhost URLs, so the suite runs unchanged from how it runs
+    # locally. The other four are only ever read by mocked code paths
+    # in tests (no test talks to the real network) — dummy values are
+    # enough, and Settings requires them to be set at all regardless
+    # (pydantic-settings fails fast on a missing one).
+    env:
+      DATABASE_URL: postgresql://user:password@localhost:5434/nexus_test
+      REDIS_URL: redis://localhost:6379
+      GROQ_API_KEY: dummy-ci-key
+      MCP_SERVER_URL: http://localhost:8001/mcp
+      MCP_API_KEY: dummy-ci-key
+      GITHUB_TOKEN: dummy-ci-token
+      ENVIRONMENT: development
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      # Smoke test, separate from pytest: the suite itself never runs
+      # Alembic (db_session builds its schema from the models directly
+      # via Base.metadata.create_all(), a deliberate project convention —
+      # see docs/nexus.md's testing section), so nothing else in CI
+      # would catch a migration that doesn't apply cleanly from scratch.
+      # This is exactly the gap that let the real dev database drift a
+      # migration behind head (Fase 4 review) go unnoticed.
+      - name: Apply migrations (smoke test)
+        working-directory: backend
+        run: alembic upgrade head
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest -v
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.2.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        working-directory: frontend
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        working-directory: frontend
+        run: pnpm run lint
+
+      - name: Test
+        working-directory: frontend
+        run: pnpm test
