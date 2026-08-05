@@ -31,7 +31,11 @@ class AnalysisRequestRepository:
 
     def get_by_id(self, analysis_request_id: int) -> AnalysisRequest | None:
         """Retrieves an AnalysisRequest by its ID, or None if it doesn't exist."""
-        return self.db.query(AnalysisRequest).filter(AnalysisRequest.id == analysis_request_id).first()
+        return (
+            self.db.query(AnalysisRequest)
+            .filter(AnalysisRequest.id == analysis_request_id)
+            .first()
+        )
 
     def get_all(self) -> list[AnalysisRequest]:
         """Retrieves all analysis requests.
@@ -58,7 +62,9 @@ class AnalysisRequestRepository:
         """
         analysis_request = self.get_by_id(analysis_request_id)
         if analysis_request is None:
-            raise AnalysisRequestNotFoundError(f"AnalysisRequest {analysis_request_id} does not exist")
+            raise AnalysisRequestNotFoundError(
+                f"AnalysisRequest {analysis_request_id} does not exist"
+            )
 
         update_fields = data.model_dump(exclude_unset=True)
         for field, value in update_fields.items():

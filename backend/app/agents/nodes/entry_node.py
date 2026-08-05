@@ -75,7 +75,10 @@ async def entry_node(state: CodeReviewState) -> dict:
             state["analysis_request_id"], exc,
         )
         return {
-            "error": f"Failed to update AnalysisRequest {state['analysis_request_id']} status during entry_node",
+            "error": (
+                f"Failed to update AnalysisRequest {state['analysis_request_id']} "
+                f"status during entry_node"
+            ),
             "node_history": ["entry"],
         }
     finally:

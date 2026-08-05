@@ -86,7 +86,9 @@ class MetricsRepository:
         """
         average_seconds = (
             self.db.query(
-                func.avg(func.extract("epoch", AnalysisRequest.updated_at - AnalysisRequest.created_at))
+                func.avg(
+                    func.extract("epoch", AnalysisRequest.updated_at - AnalysisRequest.created_at)
+                )
             )
             .filter(AnalysisRequest.status.in_(TERMINAL_STATUSES))
             .filter(AnalysisRequest.updated_at.isnot(None))

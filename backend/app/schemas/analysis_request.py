@@ -89,6 +89,8 @@ class AnalysisRequestUpdate(BaseModel):
     client-side use beyond perhaps cancelling a request.
     """
 
-    status: Literal["pending", "running", "completed", "completed_with_errors", "failed"] | None = None
+    status: (
+        Literal["pending", "running", "completed", "completed_with_errors", "failed"] | None
+    ) = None
     final_report: str | None = None
     pr_comment_url: str | None = None

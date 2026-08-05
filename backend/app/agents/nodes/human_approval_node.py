@@ -55,17 +55,18 @@ async def human_approval_node(state: CodeReviewState) -> dict:
     db = SessionLocal()
     try:
         repo = ApprovalRepository(db, AnalysisRequestRepository(db))
-        pending = next(
-            (a for a in repo.get_by_analysis_request_id(state["analysis_request_id"]) if a.status == "pending"),
-            None,
-        )
+        existing_approvals = repo.get_by_analysis_request_id(state["analysis_request_id"])
+        pending = next((a for a in existing_approvals if a.status == "pending"), None)
         approval = pending or repo.create(ApprovalCreate(
             analysis_request_id=state["analysis_request_id"],
             proposed_action=PROPOSED_ACTION,
         ))
     except AnalysisRequestNotFoundError:
         return {
-            "error": f"AnalysisRequest {state['analysis_request_id']} not found during human_approval_node",
+            "error": (
+                f"AnalysisRequest {state['analysis_request_id']} "
+                f"not found during human_approval_node"
+            ),
             "node_history": ["human_approval"],
         }
     finally:
@@ -81,7 +82,8 @@ async def human_approval_node(state: CodeReviewState) -> dict:
     db = SessionLocal()
     try:
         repo = ApprovalRepository(db, AnalysisRequestRepository(db))
-        repo.update(approval.id, ApprovalUpdate(status="approved" if decision == "approved" else "rejected"))
+        decided_status = "approved" if decision == "approved" else "rejected"
+        repo.update(approval.id, ApprovalUpdate(status=decided_status))
     finally:
         db.close()
 

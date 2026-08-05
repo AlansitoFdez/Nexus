@@ -60,7 +60,8 @@ def build_event(chunk: dict[str, Any]) -> list[dict[str, Any]]:
             continue
 
         if node_name == "router_node":
-            events.append({"type": "specialists_started", "specialists": delta.get("agents_to_run", [])})
+            specialists = delta.get("agents_to_run", [])
+            events.append({"type": "specialists_started", "specialists": specialists})
             continue
 
         if node_name in SPECIALIST_NODES:

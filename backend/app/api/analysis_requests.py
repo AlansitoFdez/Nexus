@@ -64,7 +64,9 @@ def get_analysis_request(analysis_request_id: int, db: Session = Depends(get_db)
     analysis_request = repo.get_by_id(analysis_request_id)
 
     if analysis_request is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis request not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Analysis request not found"
+        )
 
     return analysis_request
 

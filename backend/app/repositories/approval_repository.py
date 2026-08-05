@@ -93,7 +93,11 @@ class ApprovalRepository:
         """
         result = self.db.execute(
             update(Approval)
-            .where(Approval.id == approval_id, Approval.status == "pending", Approval.claimed_at.is_(None))
+            .where(
+                Approval.id == approval_id,
+                Approval.status == "pending",
+                Approval.claimed_at.is_(None),
+            )
             .values(claimed_at=func.now())
         )
         self.db.commit()

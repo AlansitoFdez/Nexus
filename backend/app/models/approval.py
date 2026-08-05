@@ -41,7 +41,9 @@ class Approval(Base):
     __tablename__ = "approvals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    analysis_request_id = Column(Integer, ForeignKey("analysis_requests.id"), nullable=False, index=True)
+    analysis_request_id = Column(
+        Integer, ForeignKey("analysis_requests.id"), nullable=False, index=True
+    )
     proposed_action = Column(Text, nullable=False)
     status = Column(String(20), server_default=sa.text("'pending'"), nullable=False)
     claimed_at = Column(DateTime(timezone=True), nullable=True)

@@ -103,7 +103,9 @@ def _headers() -> dict[str, str]:
 
 def _raise_for_github_status(response: httpx.Response, context: str) -> None:
     if response.status_code == 404:
-        raise GitHubAPIError(f"{context}: not found or inaccessible (missing, private, or doesn't exist)")
+        raise GitHubAPIError(
+            f"{context}: not found or inaccessible (missing, private, or doesn't exist)"
+        )
     if response.status_code in (401, 403):
         if response.headers.get("X-RateLimit-Remaining") == "0":
             raise GitHubAPIError(f"{context}: GitHub API rate limit exceeded, try again later")
@@ -178,7 +180,8 @@ async def fetch_repository_files(repo_url: str) -> str:
     if len(zip_response.content) > MAX_ARCHIVE_SIZE_BYTES:
         raise GitHubAPIError(
             f"Downloading archive for {owner}/{repo}: archive is "
-            f"{len(zip_response.content):,} bytes, exceeds the {MAX_ARCHIVE_SIZE_BYTES:,} byte limit"
+            f"{len(zip_response.content):,} bytes, exceeds the "
+            f"{MAX_ARCHIVE_SIZE_BYTES:,} byte limit"
         )
 
     return _extract_source_files(zip_response.content)

@@ -94,7 +94,10 @@ async def post_pr_comment(
     ],
     comment_body: Annotated[
         str,
-        Field(min_length=1, description="The comment text to post, typically the analysis's final_report."),
+        Field(
+            min_length=1,
+            description="The comment text to post, typically the analysis's final_report.",
+        ),
     ],
 ) -> str:
     """Posts a comment on a pull request.

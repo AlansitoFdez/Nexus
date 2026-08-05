@@ -32,7 +32,9 @@ class FindingRepository:
         """
         analysis_request = self.analysis_request_repository.get_by_id(data.analysis_request_id)
         if analysis_request is None:
-            raise AnalysisRequestNotFoundError(f"AnalysisRequest {data.analysis_request_id} does not exist")
+            raise AnalysisRequestNotFoundError(
+                f"AnalysisRequest {data.analysis_request_id} does not exist"
+            )
 
         finding = Finding(**data.model_dump())
         self.db.add(finding)

@@ -26,7 +26,9 @@ class Finding(Base):
     __tablename__ = "findings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    analysis_request_id = Column(Integer, ForeignKey("analysis_requests.id"), nullable=False, index=True)
+    analysis_request_id = Column(
+        Integer, ForeignKey("analysis_requests.id"), nullable=False, index=True
+    )
     specialist = Column(String(50), nullable=False)
     severity = Column(String(20), nullable=False)
     file_path = Column(String(500), nullable=True)

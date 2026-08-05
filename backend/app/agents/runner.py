@@ -99,10 +99,8 @@ async def _mark_failed_as_last_resort(analysis_request_id: int) -> None:
             db.close()
 
         if should_notify:
-            await manager.send_to_analysis_request(
-                analysis_request_id,
-                json.dumps({"type": "run_failed", "node": "runner", "message": "Unhandled internal error"}),
-            )
+            event = {"type": "run_failed", "node": "runner", "message": "Unhandled internal error"}
+            await manager.send_to_analysis_request(analysis_request_id, json.dumps(event))
     except Exception:
         logger.exception(
             "Last-resort failure handler itself failed for analysis_request_id=%s",

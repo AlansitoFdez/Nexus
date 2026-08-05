@@ -64,7 +64,10 @@ def _build_deterministic_section(findings: list[dict], failed_specialists: list[
         sorted_findings = sorted(findings, key=lambda f: SEVERITY_ORDER.get(f["severity"], 99))
         for finding in sorted_findings:
             location = f" ({finding['file_path']})" if finding.get("file_path") else ""
-            lines.append(f"- [{finding['severity'].upper()}] {finding['specialist']}{location}: {finding['description']}")
+            severity_label = finding["severity"].upper()
+            lines.append(
+                f"- [{severity_label}] {finding['specialist']}{location}: {finding['description']}"
+            )
             if finding.get("suggestion"):
                 lines.append(f"  Sugerencia: {finding['suggestion']}")
 
@@ -83,10 +86,14 @@ async def synthesizer_node(state: CodeReviewState) -> dict:
 
     llm = ChatGroq(model=settings.SPECIALIST_MODEL, temperature=0)
     try:
-        response = await llm.ainvoke(SYNTHESIZER_PROMPT.format(findings_summary=deterministic_section))
+        prompt = SYNTHESIZER_PROMPT.format(findings_summary=deterministic_section)
+        response = await llm.ainvoke(prompt)
         narrative = response.content
     except Exception:
-        narrative = "No se pudo generar el resumen narrativo; se muestra el listado completo de hallazgos a continuación."
+        narrative = (
+            "No se pudo generar el resumen narrativo; se muestra el listado "
+            "completo de hallazgos a continuación."
+        )
 
     final_report = f"{narrative}\n\n---\n\n{deterministic_section}"
 
@@ -101,7 +108,10 @@ async def synthesizer_node(state: CodeReviewState) -> dict:
     except AnalysisRequestNotFoundError:
         return {
             "final_report": final_report,
-            "error": f"AnalysisRequest {state['analysis_request_id']} not found during synthesizer_node",
+            "error": (
+                f"AnalysisRequest {state['analysis_request_id']} "
+                f"not found during synthesizer_node"
+            ),
             "node_history": ["synthesizer"],
         }
     except Exception as exc:
@@ -117,7 +127,10 @@ async def synthesizer_node(state: CodeReviewState) -> dict:
         )
         return {
             "final_report": final_report,
-            "error": f"Failed to persist AnalysisRequest {state['analysis_request_id']} during synthesizer_node",
+            "error": (
+                f"Failed to persist AnalysisRequest {state['analysis_request_id']} "
+                f"during synthesizer_node"
+            ),
             "node_history": ["synthesizer"],
         }
     finally:
