@@ -6,8 +6,6 @@ import asyncio
 import json
 import logging
 
-import pytest
-
 from app.logging_config import JSONFormatter, analysis_request_id_var, setup_logging
 
 

@@ -29,4 +29,11 @@ def get_db():
     finally:
         db.close()
 
-from app.models import analysis_request, approval, finding
+# Imported here, not at the top: app/models/*.py import Base from this
+# very module, so importing them before Base exists (line 17) would
+# fail with a circular import. This is also the real registration
+# point for every model on Base.metadata — verified directly (Fase 5.3
+# review): alembic/env.py and main.py used to also import these model
+# classes by name, but neither needed to, since importing Base from
+# here already triggers this exact line and registers everything.
+from app.models import analysis_request, approval, finding  # noqa: E402,F401

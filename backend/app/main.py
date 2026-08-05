@@ -11,7 +11,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 
-from app import models
 from app.agents.graph import build_graph
 from app.api import analysis_requests, approvals, metrics, websocket
 from app.config import settings
