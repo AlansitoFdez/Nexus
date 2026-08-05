@@ -1,0 +1,35 @@
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+# Migration files are a historical ledger, not actively-edited source —
+# several are already applied to real databases (dev, and the other
+# machine this project syncs across), the same reason a revision's
+# internal id never gets touched after the fact even when it doesn't
+# match its filename. Not worth reformatting to satisfy a rule
+# introduced long after they were written (Fase 5.3 review).
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# Fase 5.3 review — conservative starting set: F (pyflakes, real bugs:
+# unused imports/variables, undefined names) + E/W (pycodestyle style)
+# + I (import sorting) + B (bugbear, subtler real bugs like mutable
+# default arguments) — not the more subjective categories (docstring
+# style, naming conventions, ...) that would generate a lot of noise
+# on a first pass over code that's never been linted before.
+select = ["E", "W", "F", "I", "B"]
+
+# B008 flags `Depends(get_db)` in every endpoint's own signature as "a
+# function call in a default argument" — the exact anti-pattern the
+# rule exists to catch in general Python, but FastAPI's dependency
+# injection is specifically designed to be used this way; the rule has
+# no way to know that. A known, standard exception for FastAPI
+# projects, not something to silence file by file.
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests deliberately favor one dense line per call (e.g. a full
+# FindingCreate(...) constructor on one line) so the whole case being
+# tested reads at a glance — a real, established style choice for this
+# project, not an oversight E501 should flag (Fase 5.3 review).
+"tests/**" = ["E501"]
