@@ -2,7 +2,7 @@
 
 from langgraph.types import Send
 
-from app.agents.edges import route_after_router, route_after_entry, route_after_synthesizer
+from app.agents.edges import route_after_entry, route_after_router, route_after_synthesizer
 
 
 def test_route_after_router_fans_out_to_selected_agents():

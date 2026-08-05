@@ -6,7 +6,8 @@ and drop tables.
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from app.config import settings
 
 engine = create_engine(settings.DATABASE_URL)
@@ -28,4 +29,4 @@ def get_db():
     finally:
         db.close()
 
-from app.models import approval, analysis_request, finding
+from app.models import analysis_request, approval, finding

@@ -3,11 +3,11 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from tests.db import TestSessionLocal
 
 from app.agents.nodes.synthesizer_node import synthesizer_node
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
+from tests.db import TestSessionLocal
 
 
 @pytest.mark.asyncio

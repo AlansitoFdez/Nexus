@@ -1,11 +1,11 @@
 """Tests for failure_node — the terminal path for pre-fanout failures."""
 
 import pytest
-from tests.db import TestSessionLocal
 
 from app.agents.nodes.failure_node import failure_node
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
+from tests.db import TestSessionLocal
 
 
 @pytest.mark.asyncio

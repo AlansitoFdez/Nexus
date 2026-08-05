@@ -17,7 +17,11 @@ from pydantic import Field
 from app.mcp_server.github_client import (
     GitHubAPIError,
     fetch_repository_files,
+)
+from app.mcp_server.github_client import (
     get_pr_diff as _get_pr_diff,
+)
+from app.mcp_server.github_client import (
     post_pr_comment as _post_pr_comment,
 )
 from app.mcp_server.instance import mcp

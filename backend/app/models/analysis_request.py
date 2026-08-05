@@ -6,10 +6,11 @@ The rest of the pipeline (router, specialists, synthesizer) fills in
 status and produces Finding rows as it processes the request.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, CheckConstraint
 import sqlalchemy as sa
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
 
 

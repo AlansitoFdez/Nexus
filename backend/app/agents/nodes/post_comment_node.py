@@ -37,8 +37,8 @@ from app.api.websocket import manager
 from app.config import settings
 from app.database import SessionLocal
 from app.repositories.analysis_request_repository import (
-    AnalysisRequestRepository,
     AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 

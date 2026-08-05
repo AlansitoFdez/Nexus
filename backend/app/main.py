@@ -13,7 +13,7 @@ from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 
 from app import models
 from app.agents.graph import build_graph
-from app.api import approvals, websocket, analysis_requests, metrics
+from app.api import analysis_requests, approvals, metrics, websocket
 from app.config import settings
 from app.logging_config import setup_logging
 

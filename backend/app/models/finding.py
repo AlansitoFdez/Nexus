@@ -5,9 +5,10 @@ which specialist produced it, so the synthesizer node can group and
 prioritize findings by source when building the final report.
 """
 
-from sqlalchemy import CheckConstraint, Column, Integer, String, Text, DateTime, ForeignKey
-from sqlalchemy.sql import func
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
 
 

@@ -15,18 +15,18 @@ fifth specialist to the ensemble now means adding one entry to that
 dict, not editing this loop.
 """
 
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 
-from app.agents.state import CodeReviewState
-from app.agents.specialists import SPECIALISTS
+from app.agents.edges import route_after_entry, route_after_router, route_after_synthesizer
 from app.agents.nodes.entry_node import entry_node
+from app.agents.nodes.failure_node import failure_node
+from app.agents.nodes.human_approval_node import human_approval_node
+from app.agents.nodes.post_comment_node import post_comment_node
 from app.agents.nodes.router_node import router_node
 from app.agents.nodes.specialist_node import make_specialist_node
 from app.agents.nodes.synthesizer_node import synthesizer_node
-from app.agents.nodes.human_approval_node import human_approval_node
-from app.agents.nodes.post_comment_node import post_comment_node
-from app.agents.nodes.failure_node import failure_node
-from app.agents.edges import route_after_entry, route_after_router, route_after_synthesizer
+from app.agents.specialists import SPECIALISTS
+from app.agents.state import CodeReviewState
 
 
 async def build_graph(checkpointer):

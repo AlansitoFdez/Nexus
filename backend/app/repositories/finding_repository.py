@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.models.finding import Finding
 from app.repositories.analysis_request_repository import (
-    AnalysisRequestRepository,
     AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
 )
 from app.schemas.finding import FindingCreate
 

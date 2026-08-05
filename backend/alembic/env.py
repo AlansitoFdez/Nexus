@@ -1,20 +1,18 @@
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-import sys
-from pathlib import Path
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from app.database import Base
-from app.models.approval import Approval
-from app.models.analysis_request import AnalysisRequest
-from app.models.finding import Finding
 from app.config import settings
+from app.database import Base
+from app.models.analysis_request import AnalysisRequest
+from app.models.approval import Approval
+from app.models.finding import Finding
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

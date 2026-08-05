@@ -13,8 +13,11 @@ from sqlalchemy.orm import Session
 
 from app.agents.runner import resume_analysis
 from app.database import get_db
+from app.repositories.analysis_request_repository import (
+    AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
+)
 from app.repositories.approval_repository import ApprovalRepository
-from app.repositories.analysis_request_repository import AnalysisRequestRepository, AnalysisRequestNotFoundError
 from app.schemas.approval import ApprovalCreate, ApprovalDecision, ApprovalResponse
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])

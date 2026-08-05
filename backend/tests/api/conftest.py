@@ -1,12 +1,13 @@
 """Shared fixtures for API endpoint tests, using an isolated test database."""
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.database import Base, get_db
-from tests.db import engine, TestSessionLocal
+from app.main import app
+from tests.db import TestSessionLocal, engine
 
 
 def override_get_db():

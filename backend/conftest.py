@@ -3,7 +3,7 @@
 import pytest
 
 from app.database import Base
-from tests.db import engine, TestSessionLocal
+from tests.db import TestSessionLocal, engine
 
 
 @pytest.fixture

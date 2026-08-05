@@ -4,8 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
 from app.api.websocket import ConnectionManager
+from app.main import app
 
 client = TestClient(app)
 
@@ -32,8 +33,9 @@ def test_two_clients_on_different_analysis_requests_dont_interfere():
 def test_connecting_second_client_does_not_leak_into_first_client():
     """Regression test: connecting a second client to the same request
     should not resend the connection confirmation to the first one."""
-    from app.api.websocket import manager
     import asyncio
+
+    from app.api.websocket import manager
 
     with client.websocket_connect("/ws/analysis-requests/5") as ws_a:
         assert ws_a.receive_text() == "Conectado al análisis 5"

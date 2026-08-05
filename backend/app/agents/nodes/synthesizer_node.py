@@ -28,8 +28,8 @@ from app.agents.state import CodeReviewState
 from app.config import settings
 from app.database import SessionLocal
 from app.repositories.analysis_request_repository import (
-    AnalysisRequestRepository,
     AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 

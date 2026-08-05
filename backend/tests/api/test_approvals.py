@@ -141,10 +141,10 @@ def test_decide_approval_returns_409_when_already_decided(client):
     # (the real dev DB) — same "patch where it's used, not where it's defined"
     # principle documented in the methodology addendum, applied here by simply
     # building the session against the test engine directly.
-    from tests.api.conftest import TestSessionLocal
-    from app.repositories.approval_repository import ApprovalRepository
     from app.repositories.analysis_request_repository import AnalysisRequestRepository
+    from app.repositories.approval_repository import ApprovalRepository
     from app.schemas.approval import ApprovalUpdate
+    from tests.api.conftest import TestSessionLocal
 
     db = TestSessionLocal()
     try:

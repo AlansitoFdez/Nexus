@@ -26,8 +26,8 @@ import logging
 from app.agents.state import CodeReviewState
 from app.database import SessionLocal
 from app.repositories.analysis_request_repository import (
-    AnalysisRequestRepository,
     AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
 )
 from app.schemas.analysis_request import AnalysisRequestUpdate
 

@@ -2,7 +2,10 @@
 
 import pytest
 
-from app.repositories.analysis_request_repository import AnalysisRequestRepository, AnalysisRequestNotFoundError
+from app.repositories.analysis_request_repository import (
+    AnalysisRequestNotFoundError,
+    AnalysisRequestRepository,
+)
 from app.schemas.analysis_request import AnalysisRequestCreate, AnalysisRequestUpdate
 
 

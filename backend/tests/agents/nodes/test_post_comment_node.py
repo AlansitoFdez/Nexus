@@ -6,12 +6,12 @@ success (Fase 4).
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from tests.db import TestSessionLocal
 
 from app.agents.nodes.post_comment_node import post_comment_node
 from app.config import settings
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
+from tests.db import TestSessionLocal
 
 
 def _state(analysis_request_id: int, **overrides) -> dict:

@@ -3,8 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.agents.schemas import RouterDecision
-from app.agents.schemas import SpecialistFinding, SpecialistOutput
+from app.agents.schemas import RouterDecision, SpecialistFinding, SpecialistOutput
 
 
 def test_router_decision_accepts_valid_agents():

@@ -12,7 +12,6 @@ times under a different name.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from tests.db import TestSessionLocal
 
 from app.agents.nodes.specialist_node import make_specialist_node
 from app.agents.schemas import SpecialistFinding, SpecialistOutput
@@ -20,6 +19,7 @@ from app.agents.specialists import SPECIALISTS
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.repositories.finding_repository import FindingRepository
 from app.schemas.analysis_request import AnalysisRequestCreate
+from tests.db import TestSessionLocal
 
 
 @pytest.mark.asyncio

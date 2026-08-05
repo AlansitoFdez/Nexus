@@ -8,11 +8,11 @@ handling covers those separately).
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from tests.db import TestSessionLocal
 
 from app.agents.runner import run_analysis
 from app.repositories.analysis_request_repository import AnalysisRequestRepository
 from app.schemas.analysis_request import AnalysisRequestCreate, AnalysisRequestUpdate
+from tests.db import TestSessionLocal
 
 
 async def _broken_astream(*args, **kwargs):

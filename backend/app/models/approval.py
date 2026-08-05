@@ -7,10 +7,11 @@ on the real PR (post_to_pr). Always linked to the AnalysisRequest that
 generated it.
 """
 
-from sqlalchemy import CheckConstraint, Column, Integer, String, Text, DateTime, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 import sqlalchemy as sa
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.database import Base
 
 

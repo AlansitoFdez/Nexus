@@ -7,6 +7,7 @@ Fase 2.3 architecture discussion for the reasoning.
 """
 
 from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from app.agents.specialists import SPECIALISTS
