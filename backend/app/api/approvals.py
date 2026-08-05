@@ -30,11 +30,11 @@ def create_approval(data: ApprovalCreate, db: Session = Depends(get_db)):
     repo = ApprovalRepository(db, analysis_request_repository)
     try:
         return repo.create(data)
-    except AnalysisRequestNotFoundError:
+    except AnalysisRequestNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"AnalysisRequest {data.analysis_request_id} not found",
-        )
+        ) from exc
 
 
 @router.get("/{approval_id}", response_model=ApprovalResponse)
