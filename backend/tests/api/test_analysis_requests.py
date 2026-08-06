@@ -30,6 +30,34 @@ def test_get_analysis_request_returns_404_when_not_found(client):
     assert response.status_code == 404
 
 
+def test_get_analysis_request_returns_it_when_it_exists(client):
+    create_response = client.post("/analysis-requests/", json={
+        "source_type": "pasted_code",
+        "pasted_code": "def foo(): pass",
+        "review_request": "revisa seguridad",
+    })
+    request_id = create_response.json()["id"]
+
+    response = client.get(f"/analysis-requests/{request_id}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == request_id
+
+
+def test_list_analysis_requests_returns_every_request(client):
+    client.post("/analysis-requests/", json={
+        "source_type": "pasted_code", "pasted_code": "def foo(): pass", "review_request": "revisa seguridad"
+    })
+    client.post("/analysis-requests/", json={
+        "source_type": "pasted_code", "pasted_code": "def bar(): pass", "review_request": "revisa rendimiento"
+    })
+
+    response = client.get("/analysis-requests/")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
 def test_no_public_patch_endpoint_for_analysis_requests(client):
     """AnalysisRequestUpdate is for graph nodes to use internally — no
     client-facing PATCH is exposed for it (removed in the 2.5 review:
