@@ -82,9 +82,18 @@ jobs:
         working-directory: backend
         run: alembic upgrade head
 
+      - name: Lint
+        working-directory: backend
+        run: ruff check .
+
+      # --cov=app alone is enough to enforce pyproject.toml's
+      # [tool.coverage.report] fail_under = 95 (Fase 5.4 review) —
+      # verified directly: pytest-cov reads that section from
+      # coverage.py's own config on its own, no extra CLI flag needed
+      # for the job to actually fail on a real drop, not just report one.
       - name: Run tests
         working-directory: backend
-        run: pytest -v
+        run: pytest -v --cov=app --cov-report=term-missing
 
   frontend:
     runs-on: ubuntu-latest

@@ -16,12 +16,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-def get_db():
+def get_db():  # pragma: no cover
     """Yields a database session and ensures it's closed afterwards.
 
     Used as a FastAPI dependency via Depends(get_db), so each request
     gets its own session without endpoints managing its lifecycle
     directly (Dependency Inversion).
+
+    Deliberately excluded from coverage (Fase 5.4 review): every API
+    test overrides this via app.dependency_overrides, by design — the
+    real function body only ever runs against a live server, not tests.
     """
     db = SessionLocal()
     try:

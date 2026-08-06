@@ -25,7 +25,7 @@ setup_logging(logging.DEBUG if settings.ENVIRONMENT == "development" else loggin
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # pragma: no cover
     """Owns the checkpointer connection's lifecycle for the app's whole
     lifetime, instead of opening/closing it per request.
 
@@ -36,6 +36,11 @@ async def lifespan(app: FastAPI):
     pure function of the checkpointer, per build_graph()'s docstring)
     and stored on app.state so every request reuses the same compiled
     graph instead of recompiling it, or reconnecting to Redis, per call.
+
+    Deliberately excluded from coverage (Fase 5.4 review): the `client`
+    fixture (tests/api/conftest.py) stands in a mocked app.state.graph
+    instead of letting this real lifespan run, precisely so tests don't
+    need a real Redis connection.
     """
     async with AsyncRedisSaver.from_conn_string(settings.REDIS_URL) as checkpointer:
         await checkpointer.asetup()

@@ -33,3 +33,20 @@ ignore = ["B008"]
 # tested reads at a glance — a real, established style choice for this
 # project, not an oversight E501 should flag (Fase 5.3 review).
 "tests/**" = ["E501"]
+
+[tool.coverage.run]
+# Entry-point script (`python -m app.mcp_server.server`) — never
+# imported by anything, including tests, so it would always show as
+# 0% regardless of how well-tested the rest of the project is
+# (Fase 5.4 review). get_db()/lifespan() are excluded individually, via
+# `# pragma: no cover` right on their own definitions, not here — they
+# still have real logic worth reviewing if either grows, unlike this
+# file.
+omit = ["app/mcp_server/server.py"]
+
+[tool.coverage.report]
+# 98% was the real, measured baseline after closing every gap worth
+# closing (Fase 5.4 review) — set a few points below that, not at it,
+# so this catches a genuine drop instead of failing on the first
+# harmless line that isn't hit by coincidence.
+fail_under = 95
