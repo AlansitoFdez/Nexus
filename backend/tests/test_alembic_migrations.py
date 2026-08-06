@@ -15,10 +15,10 @@ one place either gets exercised.
 from pathlib import Path
 from unittest.mock import patch
 
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import text
 
+from alembic import command
 from app.config import settings
 from app.database import Base
 from tests.db import TEST_DATABASE_URL, engine
