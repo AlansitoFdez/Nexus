@@ -84,7 +84,7 @@ async def synthesizer_node(state: CodeReviewState) -> dict:
 
     deterministic_section = _build_deterministic_section(findings, failed_specialists)
 
-    llm = ChatGroq(model=settings.SPECIALIST_MODEL, temperature=0)
+    llm = ChatGroq(model=settings.SPECIALIST_MODEL, api_key=settings.GROQ_API_KEY, temperature=0)
     try:
         prompt = SYNTHESIZER_PROMPT.format(findings_summary=deterministic_section)
         response = await llm.ainvoke(prompt)

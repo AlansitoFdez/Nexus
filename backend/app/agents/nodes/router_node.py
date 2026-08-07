@@ -38,7 +38,7 @@ petición es genérica ("revisa el código"), incluye los cuatro."""
 
 
 async def router_node(state: CodeReviewState) -> dict:
-    llm = ChatGroq(model=settings.ROUTER_MODEL, temperature=0)
+    llm = ChatGroq(model=settings.ROUTER_MODEL, api_key=settings.GROQ_API_KEY, temperature=0)
     structured_llm = llm.with_structured_output(RouterDecision)
 
     try:

@@ -48,7 +48,7 @@ def make_specialist_node(name: str, prompt: str):
     """
 
     async def specialist_node(payload: dict) -> dict:
-        llm = ChatGroq(model=settings.SPECIALIST_MODEL, temperature=0)
+        llm = ChatGroq(model=settings.SPECIALIST_MODEL, api_key=settings.GROQ_API_KEY, temperature=0)
         structured_llm = llm.with_structured_output(SpecialistOutput)
 
         try:
