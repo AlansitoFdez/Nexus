@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { NewAnalysisForm } from "@/components/NewAnalysisForm";
 import { AgentTrace } from "@/components/AgentTrace";
 import { ApprovalPanel } from "@/components/ApprovalPanel";
+import { FindingsReport } from "@/components/FindingsReport";
 import { MetricsPanel } from "@/components/MetricsPanel";
 import { Panel } from "@/components/Panel";
 import { useAnalysisRequestSocket } from "@/lib/hooks/useWebSocket";
@@ -117,9 +118,11 @@ export default function Home() {
                 ) : (
                   activeRequest.final_report && (
                     <Panel title="Informe final">
-                      <pre className="text-ink-body bg-sunken border-line-soft max-w-[84ch] rounded-[11px] border px-4 py-[15px] text-[13px] leading-[1.65] whitespace-pre-wrap">
-                        {activeRequest.final_report}
-                      </pre>
+                      <FindingsReport
+                        key={activeRequest.id}
+                        finalReport={activeRequest.final_report}
+                        findings={activeRequest.findings}
+                      />
                     </Panel>
                   )
                 )}
