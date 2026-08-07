@@ -161,20 +161,20 @@ export function ApprovalPanel({ analysisRequestId, events, onResolved }: Approva
   }, [resumed]);
 
   if (!liveEvent && fallback.status === "loading") {
-    return <p className="text-sm text-gray-500">Comprobando si hay una aprobación pendiente…</p>;
+    return (
+      <p className="text-ink-muted text-sm">Comprobando si hay una aprobación pendiente…</p>
+    );
   }
 
   if (!context) {
     if (fallback.status === "claimed") {
-      return <p className="text-sm text-gray-500">Tu decisión se está procesando…</p>;
+      return <p className="text-ink-muted text-sm">Tu decisión se está procesando…</p>;
     }
-    return <p className="text-sm text-gray-500">Ninguna aprobación pendiente por ahora.</p>;
+    return <p className="text-ink-muted text-sm">Ninguna aprobación pendiente por ahora.</p>;
   }
 
   if (resumed || decisionSubmitted) {
-    return (
-      <p className="text-sm text-green-700">Decisión enviada — el análisis continuó.</p>
-    );
+    return <p className="text-ok text-sm">Decisión enviada — el análisis continuó.</p>;
   }
 
   async function handleDecision(decision: ApprovalDecisionValue) {
@@ -196,23 +196,27 @@ export function ApprovalPanel({ analysisRequestId, events, onResolved }: Approva
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-amber-400 bg-amber-50 p-4">
-      <p className="font-medium text-amber-900">{context.proposedAction}</p>
+    <div className="border-high/30 from-high/[0.07] to-high/[0.02] flex flex-col gap-3 rounded-[11px] border bg-gradient-to-b px-4 py-[15px]">
+      <p className="text-warn-ink text-[13.5px] font-medium">{context.proposedAction}</p>
 
       {context.finalReport && (
-        <pre className="whitespace-pre-wrap rounded border bg-white p-3 text-sm text-gray-700">
+        <pre className="text-ink-body bg-sunken border-line-soft max-w-[84ch] rounded-[9px] border px-3.5 py-3 text-[12.5px] leading-[1.6] whitespace-pre-wrap">
           {context.finalReport}
         </pre>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="bg-critical/[0.08] border-critical/30 text-danger-ink rounded-[9px] border px-3 py-2.5 text-[12.5px]">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => handleDecision("approved")}
           disabled={submitting}
-          className="rounded bg-green-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          className="bg-ok text-ok-ink hover:brightness-[1.08] rounded-[9px] px-4 py-2 text-[12.5px] font-semibold disabled:opacity-55"
         >
           Aprobar
         </button>
@@ -220,7 +224,7 @@ export function ApprovalPanel({ analysisRequestId, events, onResolved }: Approva
           type="button"
           onClick={() => handleDecision("rejected")}
           disabled={submitting}
-          className="rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+          className="border-critical/30 bg-critical/5 text-danger-ink hover:bg-critical/10 rounded-[9px] border px-4 py-2 text-[12.5px] font-semibold disabled:opacity-55"
         >
           Rechazar
         </button>
