@@ -77,7 +77,7 @@ describe("MetricsPanel", () => {
     expect(screen.getByText("4")).toBeInTheDocument();
   });
 
-  it("renders findings by severity using the raw key, since no label map is passed", async () => {
+  it("renders findings by severity using Spanish labels", async () => {
     getMetricsMock.mockResolvedValue({
       ...EMPTY_METRICS,
       findings_by_severity: { critical: 1 },
@@ -85,7 +85,34 @@ describe("MetricsPanel", () => {
 
     render(<MetricsPanel />);
 
-    expect(await screen.findByText("critical")).toBeInTheDocument();
+    expect(await screen.findByText("Crítico")).toBeInTheDocument();
+  });
+
+  it("orders the status breakdown by pipeline order, not by input order", async () => {
+    getMetricsMock.mockResolvedValue({
+      ...EMPTY_METRICS,
+      by_status: { failed: 1, pending: 2, completed: 3 },
+    });
+
+    render(<MetricsPanel />);
+    await screen.findByText("Pendientes");
+
+    const labels = screen.getAllByText(/Pendientes|Completados$|Fallidos/).map((el) => el.textContent);
+    expect(labels).toEqual(["Pendientes", "Completados", "Fallidos"]);
+  });
+
+  it("scales each bar's width relative to the largest count in its group", async () => {
+    getMetricsMock.mockResolvedValue({
+      ...EMPTY_METRICS,
+      findings_by_severity: { critical: 4, low: 2 },
+    });
+
+    render(<MetricsPanel />);
+    const criticalRow = (await screen.findByText("Crítico")).closest("li");
+    const lowRow = screen.getByText("Bajo").closest("li");
+
+    expect(criticalRow?.querySelector("[style]")).toHaveStyle({ width: "100%" });
+    expect(lowRow?.querySelector("[style]")).toHaveStyle({ width: "50%" });
   });
 
   it("formats an average duration under a minute in seconds", async () => {
