@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveAgentTrace } from "./agent-trace";
+import { deriveAgentTrace, derivePhases } from "./agent-trace";
 import type { WSEvent } from "./api/types";
 
 describe("deriveAgentTrace", () => {
@@ -82,5 +82,101 @@ describe("deriveAgentTrace", () => {
     ];
 
     expect(deriveAgentTrace(events)).toEqual([]);
+  });
+});
+
+describe("derivePhases", () => {
+  it("shows router as active and the rest pending before anything happens", () => {
+    expect(derivePhases([])).toEqual([
+      { phase: "router", status: "active" },
+      { phase: "specialists", status: "pending" },
+      { phase: "synthesis", status: "pending" },
+    ]);
+  });
+
+  it("moves to specialists active once the router names them", () => {
+    const events: WSEvent[] = [
+      { type: "specialists_started", specialists: ["security", "performance"] },
+    ];
+
+    expect(derivePhases(events)).toEqual([
+      { phase: "router", status: "done" },
+      { phase: "specialists", status: "active" },
+      { phase: "synthesis", status: "pending" },
+    ]);
+  });
+
+  it("keeps specialists active while any of them is still running", () => {
+    const events: WSEvent[] = [
+      { type: "specialists_started", specialists: ["security", "performance"] },
+      { type: "specialist_finished", specialist: "security", findings_count: 1, failed: false },
+    ];
+
+    expect(derivePhases(events)[1]).toEqual({ phase: "specialists", status: "active" });
+  });
+
+  it("moves to synthesis active once every specialist has settled", () => {
+    const events: WSEvent[] = [
+      { type: "specialists_started", specialists: ["security"] },
+      { type: "specialist_finished", specialist: "security", findings_count: 1, failed: false },
+    ];
+
+    expect(derivePhases(events)).toEqual([
+      { phase: "router", status: "done" },
+      { phase: "specialists", status: "done" },
+      { phase: "synthesis", status: "active" },
+    ]);
+  });
+
+  // A specialist marked "failed" still counts as settled — the pipeline
+  // moves on to synthesis regardless, same as failed_specialists never
+  // blocking the graph on the backend side.
+  it("treats a failed specialist as settled, same as a done one", () => {
+    const events: WSEvent[] = [
+      { type: "specialists_started", specialists: ["security"] },
+      { type: "specialist_finished", specialist: "security", findings_count: 0, failed: true },
+    ];
+
+    expect(derivePhases(events)[1]).toEqual({ phase: "specialists", status: "done" });
+  });
+
+  it("marks synthesis as done once its node_finished event arrives", () => {
+    const events: WSEvent[] = [
+      { type: "specialists_started", specialists: ["security"] },
+      { type: "specialist_finished", specialist: "security", findings_count: 1, failed: false },
+      { type: "node_finished", node: "synthesizer" },
+    ];
+
+    expect(derivePhases(events)).toEqual([
+      { phase: "router", status: "done" },
+      { phase: "specialists", status: "done" },
+      { phase: "synthesis", status: "done" },
+    ]);
+  });
+
+  it("marks the phase that was in flight as failed, not the one named in run_failed", () => {
+    // node here is the raw graph node ("entry_node"), which isn't one of
+    // the three phase keys at all — router is what was actually pending.
+    const events: WSEvent[] = [{ type: "run_failed", node: "entry_node", message: "boom" }];
+
+    expect(derivePhases(events)).toEqual([
+      { phase: "router", status: "failed" },
+      { phase: "specialists", status: "pending" },
+      { phase: "synthesis", status: "pending" },
+    ]);
+  });
+
+  it("marks specialists as failed when the run dies mid fan-out, leaving synthesis pending", () => {
+    const events: WSEvent[] = [
+      { type: "specialists_started", specialists: ["security", "performance"] },
+      { type: "specialist_finished", specialist: "security", findings_count: 1, failed: false },
+      { type: "run_failed", node: "runner", message: "boom" },
+    ];
+
+    expect(derivePhases(events)).toEqual([
+      { phase: "router", status: "done" },
+      { phase: "specialists", status: "failed" },
+      { phase: "synthesis", status: "pending" },
+    ]);
   });
 });
