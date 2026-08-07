@@ -5,6 +5,7 @@ import { NewAnalysisForm } from "@/components/NewAnalysisForm";
 import { AgentTrace } from "@/components/AgentTrace";
 import { ApprovalPanel } from "@/components/ApprovalPanel";
 import { MetricsPanel } from "@/components/MetricsPanel";
+import { Panel } from "@/components/Panel";
 import { useAnalysisRequestSocket } from "@/lib/hooks/useWebSocket";
 import { getAnalysisRequest } from "@/lib/api/client";
 import type { AnalysisRequest } from "@/lib/api/types";
@@ -48,60 +49,116 @@ export default function Home() {
   }, [synthesizerFinished, activeRequestId]);
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-8">
-      <header>
-        <h1 className="text-4xl font-bold">Nexus</h1>
-        <p className="mt-2 text-gray-500">Orquestador multi-agente</p>
-      </header>
+    <main className="flex flex-1 flex-col items-center px-7 pt-6 pb-10">
+      <div className="flex w-full max-w-[1360px] flex-col gap-[22px]">
+        <header className="border-line flex flex-wrap items-end justify-between gap-6 border-b pb-[18px]">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2.5">
+              <span className="bg-accent size-[9px] rounded-full shadow-[0_0_12px_var(--color-accent)]" />
+              <h1 className="text-[21px] font-semibold tracking-[-0.02em]">Nexus</h1>
+              <span className="text-ink-dim border-line rounded border px-1.5 py-[3px] font-mono text-[10px] tracking-[0.09em] uppercase">
+                self-hosted
+              </span>
+            </div>
+            <p className="text-ink-muted text-[13px]">
+              Revisión de código multi-agente · orquestador
+            </p>
+          </div>
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Nuevo análisis</h2>
-        <NewAnalysisForm onCreated={setActiveRequest} />
-      </section>
-
-      {activeRequest && (
-        <>
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">
-              Especialistas — solicitud #{activeRequest.id}
-            </h2>
-            {/* Keyed by id: a fresh AnalysisRequest must remount these,
-                not just receive a new prop — ApprovalPanel's own
-                decisionSubmitted state would otherwise leak across runs. */}
-            <AgentTrace key={activeRequest.id} events={events} isConnected={isConnected} />
-          </section>
-
-          {(activeRequest.final_report || runFailedEvent) && (
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold">Informe final</h2>
-              {runFailedEvent ? (
-                <p className="text-sm text-red-600">
-                  El análisis falló en el nodo &quot;{runFailedEvent.node}&quot;: {runFailedEvent.message}
-                </p>
-              ) : (
-                <pre className="whitespace-pre-wrap rounded border bg-white p-3 text-sm text-gray-700">
-                  {activeRequest.final_report}
-                </pre>
-              )}
-            </section>
+          {/* Only rendered once a run exists: with no activeRequest the hook
+              never opens a socket at all, so a permanent "desconectado" would
+              be reporting a problem that isn't one. */}
+          {activeRequest && (
+            <div className="text-ink-muted flex items-center gap-[7px] font-mono text-[11px]">
+              <span className={`size-1.5 rounded-full ${isConnected ? "bg-ok" : "bg-ink-faint"}`} />
+              {isConnected ? "websocket conectado" : "websocket desconectado"}
+            </div>
           )}
+        </header>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold">Aprobación</h2>
-            <ApprovalPanel
-              key={activeRequest.id}
-              analysisRequestId={activeRequest.id}
-              events={events}
-              onResolved={() => setMetricsRefreshToken((token) => token + 1)}
-            />
-          </section>
-        </>
-      )}
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[372px_minmax(0,1fr)]">
+          {/* Sticky only from lg up: below that the grid is a single column,
+              and a sticky form would pin itself over the results underneath it. */}
+          <div className="lg:sticky lg:top-6">
+            <Panel title="Nuevo análisis">
+              <NewAnalysisForm onCreated={setActiveRequest} />
+            </Panel>
+          </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Métricas</h2>
-        <MetricsPanel refreshKey={metricsRefreshToken} />
-      </section>
+          <div className="flex min-w-0 flex-col gap-5">
+            {activeRequest ? (
+              <>
+                <Panel
+                  title="Especialistas"
+                  meta={
+                    <span className="text-ink-dim border-line rounded-[5px] border px-[7px] py-0.5 font-mono text-[11px]">
+                      solicitud #{activeRequest.id}
+                    </span>
+                  }
+                >
+                  {/* Keyed by id: a fresh AnalysisRequest must remount these,
+                      not just receive a new prop — ApprovalPanel's own
+                      decisionSubmitted state would otherwise leak across runs. */}
+                  <AgentTrace key={activeRequest.id} events={events} isConnected={isConnected} />
+                </Panel>
+
+                {runFailedEvent ? (
+                  <Panel title="El análisis falló" tone="danger">
+                    <div className="flex flex-col gap-2.5">
+                      <p className="text-warn-ink/80 text-[13.5px]">
+                        El grafo se detuvo antes de terminar, así que no hay informe para esta
+                        solicitud. Los hallazgos de los especialistas que sí acabaron se conservan.
+                      </p>
+                      <p className="text-ink-muted bg-canvas border-line rounded-[9px] border px-3 py-[11px] font-mono text-xs whitespace-pre-wrap">
+                        run_failed · nodo &quot;{runFailedEvent.node}&quot;: {runFailedEvent.message}
+                      </p>
+                    </div>
+                  </Panel>
+                ) : (
+                  activeRequest.final_report && (
+                    <Panel title="Informe final">
+                      <pre className="text-ink-body bg-sunken border-line-soft max-w-[84ch] rounded-[11px] border px-4 py-[15px] text-[13px] leading-[1.65] whitespace-pre-wrap">
+                        {activeRequest.final_report}
+                      </pre>
+                    </Panel>
+                  )
+                )}
+
+                <Panel title="Aprobación">
+                  <ApprovalPanel
+                    key={activeRequest.id}
+                    analysisRequestId={activeRequest.id}
+                    events={events}
+                    onResolved={() => setMetricsRefreshToken((token) => token + 1)}
+                  />
+                </Panel>
+              </>
+            ) : (
+              <section className="border-line-strong bg-sunken flex flex-col items-center gap-3 rounded-[14px] border border-dashed px-8 py-[46px] text-center">
+                <div className="flex gap-1.5">
+                  <span className="bg-line-strong size-2 rounded-full" />
+                  <span className="bg-line-strong size-2 rounded-full" />
+                  <span className="bg-line-strong size-2 rounded-full" />
+                  <span className="bg-line-strong size-2 rounded-full" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Ningún análisis en curso</h2>
+                <p className="text-ink-dim max-w-[46ch] text-[13px]">
+                  Describe qué quieres revisar y el router elegirá qué especialistas activar. Los
+                  resultados aparecerán aquí en vivo.
+                </p>
+              </section>
+            )}
+
+            <Panel title="Métricas">
+              <MetricsPanel refreshKey={metricsRefreshToken} />
+            </Panel>
+          </div>
+        </div>
+
+        <p className="text-ink-faint font-mono text-[10.5px]">
+          nexus · instancia local · un solo desarrollador
+        </p>
+      </div>
     </main>
   );
 }

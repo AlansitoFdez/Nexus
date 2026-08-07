@@ -1,1 +1,78 @@
 @import "tailwindcss";
+
+/* Design tokens for the dark UI (Fase 6 visual redesign).
+   Declared inside @theme so Tailwind v4 generates the matching utilities
+   (bg-panel, text-ink-dim, border-line, animate-status-pulse, ...) instead
+   of the raw hex values being retyped across every component. */
+@theme {
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Surfaces, from the page backdrop inwards. "sunken" is a panel nested
+     inside another panel — it goes darker, not lighter, so depth reads the
+     same way at every level. */
+  --color-canvas: #0b0e13;
+  --color-panel: #101520;
+  --color-sunken: #0d1219;
+  --color-active: #171e2a;
+
+  /* Borders. line-soft is for dividers inside a panel (header rules),
+     line-strong only appears on hover. */
+  --color-line: #212938;
+  --color-line-soft: #1b2231;
+  --color-line-strong: #2e3745;
+
+  /* Text, brightest to faintest. */
+  --color-ink: #e7ecf3;
+  --color-ink-body: #c7d0dc;
+  --color-ink-muted: #94a0b2;
+  --color-ink-dim: #667385;
+  --color-ink-faint: #4e5a6b;
+
+  /* accent-ink is the near-black used *on top of* the accent, so filled
+     buttons keep real contrast instead of white-on-cyan. Same idea for ok-ink. */
+  --color-accent: #46c8d6;
+  --color-accent-bright: #7fe2ec;
+  --color-accent-ink: #05202a;
+  --color-ok: #5fcf97;
+  --color-ok-ink: #05261a;
+
+  /* One color per severity level in the backend's Literal (schemas/finding.py). */
+  --color-critical: #ff6b72;
+  --color-high: #ffa463;
+  --color-medium: #f0cf63;
+  --color-low: #7fb0f5;
+  --color-danger-ink: #ff9aa0;
+  --color-warn-ink: #ffc59a;
+
+  /* status-pulse marks "this is happening right now" (a running specialist,
+     a pending approval); sweep is the indeterminate progress bar under a
+     card that's still working — neither has a known percentage to show. */
+  --animate-status-pulse: status-pulse 1.4s ease-in-out infinite;
+  --animate-sweep: sweep 1.4s ease-in-out infinite;
+
+  @keyframes status-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes sweep {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(320%);
+    }
+  }
+}
+
+@layer base {
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 28%, transparent);
+  }
+}
