@@ -50,4 +50,4 @@ Todo código que entregue va acompañado de una explicación detallada y descrip
 
 ## Estado actual del proyecto
 
-Fases 0-3 completas y verificadas. Fase 4 (dashboard Next.js) construida y verificada por piezas — pendiente componer la página real que junte `AgentTrace`/`ApprovalPanel`/`MetricsPanel` (`src/app/page.tsx` sigue siendo el scaffold por defecto). Fases 5 (calidad/observabilidad) y 6 (despliegue) planificadas, metodología decidida, sin empezar.
+Fases 0-4 completas y verificadas, incluyendo el dashboard de Next.js (`src/app/page.tsx` ya compone `AgentTrace`/`ApprovalPanel`/`MetricsPanel` contra un `analysisRequestId` real). Fase 5 (calidad, tests y observabilidad) completa y verificada: logging estructurado (JSON + `contextvars`), CI en GitHub Actions (backend/frontend en paralelo), lint con ruff, cobertura de tests backend al 99% (umbral 95%) con test de round-trip de Alembic, y tests de los 4 componentes React con React Testing Library. 178 tests de backend, 46 de frontend. Fase 6 (despliegue a producción) planificada, metodología decidida, sin empezar.
