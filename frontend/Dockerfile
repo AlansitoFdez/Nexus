@@ -5,7 +5,7 @@
 FROM node:22-slim AS deps
 WORKDIR /app
 RUN npm install -g pnpm@11.2.2
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM node:22-slim AS builder
@@ -26,11 +26,12 @@ FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN useradd --create-home --uid 1000 appuser
-COPY --from=builder --chown=appuser:appuser /app/.next/standalone ./
-COPY --from=builder --chown=appuser:appuser /app/.next/static ./.next/static
+# node:22-slim already ships a "node" user at UID 1000 for exactly this
+# purpose — creating our own here collided with it (Fase 6 review).
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
-USER appuser
+USER node
 EXPOSE 3000
 
 CMD ["node", "server.js"]

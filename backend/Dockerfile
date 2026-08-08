@@ -3,7 +3,11 @@
 # (set per service in docker-compose.yml, not baked in here).
 FROM python:3.13-slim
 
-RUN useradd --create-home --uid 1000 appuser
+# No pinned UID: python:3.13-slim doesn't predefine one, but pinning it
+# anyway risks the exact collision the frontend image hit against
+# node:22-slim's built-in "node" user (Fase 6 review) if the base image
+# ever changes underneath this.
+RUN useradd --create-home appuser
 
 WORKDIR /app
 
