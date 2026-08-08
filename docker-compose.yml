@@ -4,6 +4,7 @@ name: nexus
 services:
   postgres:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -12,11 +13,85 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d nexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis/redis-stack-server:latest
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Runs the FastAPI API. Waits on both healthchecks before starting —
+  # main.py's lifespan connects to Redis on boot (AsyncRedisSaver), and
+  # a Redis that's still starting up made this fail exactly this way
+  # once already during local development (Fase 6 review).
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Overrides env_file's host-oriented values (meant for a backend
+      # running outside Docker against localhost) with how this
+      # container actually reaches its neighbors: compose's own service
+      # DNS names, and each service's real internal port — not the
+      # host-side port mapping (postgres listens on 5432 inside the
+      # network; 5434 only exists on the host side of that mapping).
+      DATABASE_URL: postgresql://user:password@postgres:5432/nexus
+      REDIS_URL: redis://redis:6379
+      MCP_SERVER_URL: http://mcp_server:8001/mcp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+  # Same image as backend (same source, same requirements.txt) — only
+  # the startup command differs. Doesn't wait on postgres/redis: it
+  # never touches either directly, it only calls out to the GitHub API
+  # (see backend/app/mcp_server/tools.py).
+  mcp_server:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/nexus
+      REDIS_URL: redis://redis:6379
+      MCP_SERVER_URL: http://mcp_server:8001/mcp
+    command: python -m app.mcp_server.server
+    ports:
+      - "8001:8001"
+
+  # NEXT_PUBLIC_API_URL is baked into the client bundle at build time
+  # (see frontend/Dockerfile), and it has to be the address the user's
+  # *browser* can reach — localhost:8000, the host-side port mapping —
+  # not backend:8000, which only means something inside this compose
+  # network the browser was never part of.
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:
