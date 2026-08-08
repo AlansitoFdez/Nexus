@@ -1,0 +1,12 @@
+node_modules
+.next
+
+# Never send real secrets to the build context — .env.example has no
+# real values and is safe to keep.
+.env
+.env.*
+!.env.example
+
+*.tsbuildinfo
+next-env.d.ts
+coverage
