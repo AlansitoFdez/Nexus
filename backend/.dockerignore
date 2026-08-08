@@ -1,0 +1,18 @@
+# Never send real secrets to the build context — env vars are injected
+# by docker-compose at runtime instead. .env.example is safe to keep
+# (no real values in it) and can stay as in-image reference.
+.env
+.env.*
+!.env.example
+
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+venv/
+
+# Not needed at runtime — keeps the image smaller and avoids shipping
+# test fixtures into what's meant to be a running self-hosted instance.
+tests/
+conftest.py
