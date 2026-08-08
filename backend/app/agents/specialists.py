@@ -58,7 +58,10 @@ Código a analizar:
 {{code}}
 </code>
 
-{empty_result_note}"""
+{empty_result_note}
+
+Escribe "description" y "suggestion" en español, aunque el código o los \
+nombres de variables estén en inglés."""
 
 
 SPECIALISTS: dict[str, str] = {
